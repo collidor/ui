@@ -1,0 +1,170 @@
+/**
+ * D&D 5e Monster Manual Parchment Theme ("Bestiary")
+ *
+ * Inspired by D&D 5th Edition Monster Manual / System Reference Document:
+ * - Aged cream / vellum parchment as the page canvas (light theme)
+ * - Deep burgundy-crimson rule headers, exactly as in the MM stat blocks
+ * - Iron-gall black ink typography on parchment for WCAG AAA (>= 7:1)
+ * - Worn tan / sienna ornamental borders
+ * - All radiuses near-zero — stat blocks are sharp-cornered, book-printed
+ */
+
+.theme-rpg-parchment,
+[data-theme='rpg-parchment'] {
+  /* ── Canvas: aged vellum / cream parchment (light theme) ─────────────── */
+  --ui-color-surface:          oklch(0.93 0.022 82);  /* #f0e6cc warm parchment */
+  --ui-color-surface-elevated: oklch(0.97 0.014 82);  /* #f8f2e4 lighter sheet */
+  --ui-color-surface-hover:    oklch(0.89 0.03 80);
+  --ui-color-surface-active:   oklch(0.85 0.04 78);
+  --ui-color-border:           oklch(0.60 0.10 55);   /* worn sienna rule line */
+  --ui-color-border-subtle:    oklch(0.72 0.07 60);   /* light tan divider */
+  --ui-color-border-hover:     oklch(0.45 0.14 32);   /* burgundy hover border */
+
+  /* ── Typography: iron-gall black ink on parchment ────────────────────── */
+  --ui-color-text:             oklch(0.16 0.025 45);  /* near-black ink */
+  --ui-color-text-muted:       oklch(0.38 0.05  45);  /* dark sepia for secondary */
+  --ui-color-text-subtle:      oklch(0.52 0.04  50);
+  --ui-font-family:   'Palatino Linotype', 'Book Antiqua', 'EB Garamond', Palatino, Georgia, serif;
+  --ui-font-heading:  'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --ui-font-mono:     'Courier New', 'Courier Prime', Courier, monospace;
+
+  /* ── Primary: D&D stat-block burgundy-crimson ────────────────────────── */
+  --ui-color-primary:          oklch(0.38 0.18 20);   /* #7d1c1c Monster Manual red */
+  --ui-color-primary-hover:    oklch(0.45 0.18 20);
+  --ui-color-primary-active:   oklch(0.30 0.18 20);
+  --ui-color-primary-subtle:   oklch(0.38 0.18 20 / 0.12);
+  --ui-color-primary-border:   oklch(0.38 0.18 20 / 0.45);
+  --ui-color-primary-text:     oklch(0.97 0.01 80);   /* cream text on crimson */
+
+  /* ── Accent: worn gilded gold (chapter ornaments) ────────────────────── */
+  --ui-color-accent:           oklch(0.58 0.13 72);   /* antique gold */
+  --ui-color-accent-hover:     oklch(0.65 0.13 72);
+  --ui-color-accent-active:    oklch(0.48 0.13 72);
+  --ui-color-accent-subtle:    oklch(0.58 0.13 72 / 0.15);
+  --ui-color-accent-border:    oklch(0.58 0.13 72 / 0.45);
+  --ui-color-accent-text:      oklch(0.14 0.03 40);
+
+  /* ── Semantic colours (dark enough for parchment bg) ─────────────────── */
+  --ui-color-success:          oklch(0.36 0.14 140);
+  --ui-color-success-hover:    oklch(0.43 0.14 140);
+  --ui-color-success-active:   oklch(0.28 0.14 140);
+  --ui-color-success-subtle:   oklch(0.36 0.14 140 / 0.12);
+  --ui-color-success-border:   oklch(0.36 0.14 140 / 0.45);
+  --ui-color-success-text:     oklch(0.97 0.01 80);
+
+  --ui-color-warning:          oklch(0.50 0.14 68);
+  --ui-color-warning-hover:    oklch(0.58 0.14 68);
+  --ui-color-warning-active:   oklch(0.42 0.14 68);
+  --ui-color-warning-subtle:   oklch(0.50 0.14 68 / 0.12);
+  --ui-color-warning-border:   oklch(0.50 0.14 68 / 0.45);
+  --ui-color-warning-text:     oklch(0.14 0.03 40);
+
+  --ui-color-danger:           oklch(0.38 0.20 22);
+  --ui-color-danger-hover:     oklch(0.45 0.20 22);
+  --ui-color-danger-active:    oklch(0.30 0.20 22);
+  --ui-color-danger-subtle:    oklch(0.38 0.20 22 / 0.12);
+  --ui-color-danger-border:    oklch(0.38 0.20 22 / 0.45);
+  --ui-color-danger-text:      oklch(0.97 0.01 80);
+
+  --ui-color-info:             oklch(0.36 0.12 225);
+  --ui-color-info-hover:       oklch(0.43 0.12 225);
+  --ui-color-info-active:      oklch(0.28 0.12 225);
+  --ui-color-info-subtle:      oklch(0.36 0.12 225 / 0.12);
+  --ui-color-info-border:      oklch(0.36 0.12 225 / 0.45);
+  --ui-color-info-text:        oklch(0.97 0.01 80);
+
+  /* ── Geometry: book-printed, no rounded corners ──────────────────────── */
+  --ui-radius-sm:   1px;
+  --ui-radius-md:   2px;
+  --ui-radius-lg:   3px;
+  --ui-radius-xl:   4px;
+  --ui-radius-full: 9999px;
+
+  /* ── Shadows: soft press-printed depth ───────────────────────────────── */
+  --ui-shadow-sm:    0 1px 3px rgba(60, 30, 10, 0.20);
+  --ui-shadow-md:    0 3px 10px rgba(60, 30, 10, 0.25), inset 0 1px 0 rgba(255, 250, 235, 0.8);
+  --ui-shadow-lg:    0 8px 24px rgba(60, 30, 10, 0.30), inset 0 1px 0 rgba(255, 250, 235, 0.9);
+  --ui-shadow-soft:  0 4px 16px rgba(60, 30, 10, 0.20);
+  --ui-shadow-inset: inset 0 2px 4px rgba(60, 30, 10, 0.12);
+
+  /* ── Card: Monster stat-block style ─────────────────────────────────────
+     Off-white inner sheet, burgundy header banner, thin rule border        */
+  --ui-card-bg:             oklch(0.97 0.014 82);   /* near-white parchment sheet */
+  --ui-card-color:          oklch(0.16 0.025 45);
+  --ui-card-color-muted:    oklch(0.38 0.05  45);
+  --ui-card-border:         1px solid oklch(0.55 0.10 50);
+  --ui-card-radius:         2px;
+  --ui-card-header-bg:      oklch(0.38 0.18 20);   /* burgundy header = MM section rule */
+  --ui-card-header-border:  1px solid oklch(0.30 0.16 20);
+  --ui-card-header-color:   oklch(0.97 0.014 82);  /* cream text on burgundy */
+  --ui-card-footer-bg:      oklch(0.90 0.025 80);
+  --ui-card-footer-color:   oklch(0.32 0.04 45);
+  --ui-card-footer-border:  1px solid oklch(0.65 0.08 60 / 0.5);
+  --ui-card-shadow:         0 4px 14px rgba(60, 30, 10, 0.22);
+
+  /* ── Stat cards ──────────────────────────────────────────────────────── */
+  --ui-stat-card-bg:           oklch(0.97 0.014 82);
+  --ui-stat-card-color:        oklch(0.16 0.025 45);
+  --ui-stat-card-border:       1px solid oklch(0.55 0.10 50);
+  --ui-stat-card-radius:       2px;
+  --ui-stat-header-bg:         oklch(0.38 0.18 20);
+  --ui-stat-header-color:      oklch(0.97 0.014 82);
+  --ui-stat-title-color:       oklch(0.97 0.014 82);
+  --ui-stat-subtitle-color:    oklch(0.82 0.06 80);
+  --ui-stat-item-bg:           oklch(0.93 0.022 82);
+  --ui-stat-item-color:        oklch(0.16 0.025 45);
+  --ui-stat-item-hover-bg:     oklch(0.88 0.035 78);
+  --ui-stat-item-hover-border: oklch(0.45 0.14 30);
+  --ui-stat-item-hover-color:  oklch(0.12 0.03 40);
+  --ui-stat-modifier-color:    oklch(0.38 0.18 20);
+  --ui-stat-cell-bg:           oklch(0.93 0.022 82);
+  --ui-stat-cell-highlight-bg: oklch(0.38 0.18 20 / 0.14);
+
+  /* ── Form inputs ─────────────────────────────────────────────────────── */
+  --ui-input-bg:                oklch(0.97 0.014 82);
+  --ui-input-color:             oklch(0.16 0.025 45);
+  --ui-input-placeholder-color: oklch(0.52 0.04  50);
+  --ui-input-border:            1px solid oklch(0.60 0.10 55);
+  --ui-input-radius:            2px;
+  --ui-input-shadow:            inset 0 1px 2px rgba(60, 30, 10, 0.10);
+
+  --ui-btn-radius:  2px;
+  --ui-btn-shadow:  0 2px 5px rgba(60, 30, 10, 0.22), inset 0 1px 0 rgba(255, 250, 235, 0.4);
+
+  --ui-badge-radius:       2px;
+  --ui-badge-font-family:  var(--ui-font-family);
+
+  /* ── Table: stat-block table ─────────────────────────────────────────── */
+  --ui-table-bg:              oklch(0.97 0.014 82);
+  --ui-table-color:           oklch(0.16 0.025 45);
+  --ui-table-border:          1px solid oklch(0.55 0.10 50);
+  --ui-table-border-color:    oklch(0.65 0.08 60 / 0.5);
+  --ui-table-radius:          2px;
+  --ui-table-shadow:          0 4px 14px rgba(60, 30, 10, 0.22);
+  --ui-table-header-bg:       oklch(0.38 0.18 20);   /* burgundy header */
+  --ui-table-header-color:    oklch(0.97 0.014 82);
+  --ui-table-header-bar-bg:   oklch(0.38 0.18 20);
+  --ui-table-header-border:   1px solid oklch(0.30 0.16 20);
+  --ui-table-footer-bar-bg:   oklch(0.90 0.025 80);
+  --ui-table-footer-color:    oklch(0.32 0.04 45);
+  --ui-table-footer-border:   1px solid oklch(0.65 0.08 60 / 0.5);
+  --ui-table-row-stripe:      oklch(0.92 0.024 82);
+  --ui-table-row-hover:       oklch(0.88 0.032 80);
+  --ui-table-row-selected-bg: oklch(0.38 0.18 20 / 0.14);
+  --ui-table-page-btn-bg:     oklch(0.90 0.025 80);
+  --ui-table-page-btn-color:  oklch(0.16 0.025 45);
+
+  /* ── Lists ───────────────────────────────────────────────────────────── */
+  --ui-list-bg:                 oklch(0.97 0.014 82);
+  --ui-list-color:              oklch(0.16 0.025 45);
+  --ui-list-border:             1px solid oklch(0.55 0.10 50);
+  --ui-list-radius:             2px;
+  --ui-list-item-bg:            oklch(0.93 0.022 82);
+  --ui-list-item-hover-bg:      oklch(0.88 0.032 78);
+  --ui-list-item-hover-border:  oklch(0.45 0.14 30);
+  --ui-list-item-selected-bg:   oklch(0.38 0.18 20 / 0.14);
+
+  /* ── Tooltip ─────────────────────────────────────────────────────────── */
+  --ui-tooltip-bg:    oklch(0.22 0.04 40);   /* dark ink tooltip on parchment */
+  --ui-tooltip-color: oklch(0.95 0.02 80);
+}

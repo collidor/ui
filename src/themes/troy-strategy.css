@@ -1,0 +1,169 @@
+/**
+ * Total War Saga: TROY Strategy Campaign & Homeric Bronze Theme
+ *
+ * Inspired by Total War Saga: TROY UI / Bronze Age Greek Aesthetics:
+ * - Volcanic basalt stone & weathered bronze frames with Greek key / meander engravings
+ * - Terracotta & amphora red-figure / black-figure vase art banners and headers
+ * - Aged Aegean sand parchment cards (Food, Wood, Stone, Bronze, Gold economy)
+ * - Deep iron umber ink typography meeting strict WCAG AAA contrast (>= 7:1) on parchment
+ * - Radiant Spartan gold & Homeric bronze medallions on dark basalt surfaces
+ * - Authentic strategy HUD & tech tree styling with Golden Ratio proportions
+ */
+
+.theme-troy-strategy,
+[data-theme='troy-strategy'] {
+  /* Canvas Surface & Base (Volcanic Basalt Stone & Weathered Bronze) */
+  --ui-color-surface: oklch(0.15 0.02 45); /* Dark volcanic basalt #171310 */
+  --ui-color-surface-elevated: oklch(0.22 0.03 48); /* Dark bronze stone slab #231c17 */
+  --ui-color-border: oklch(0.58 0.12 70); /* Antique Homeric bronze #946d33 */
+  --ui-color-border-subtle: oklch(0.38 0.06 55); /* Dark weathered bronze #473522 */
+  --ui-color-border-hover: oklch(0.75 0.16 78); /* Polished radiant gold */
+
+  /* Global Typography (Greek Marble White & Radiant Gold on Dark Basalt Canvas) */
+  --ui-color-text: oklch(0.95 0.03 75); /* Polished Greek marble white #f6eee3 */
+  --ui-color-text-muted: oklch(0.78 0.08 75); /* Burnished bronze gold #cfa968 */
+  --ui-color-text-subtle: oklch(0.60 0.06 65); /* Muted bronze tone */
+  --ui-font-family: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --ui-font-heading: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', Georgia, serif;
+  --ui-font-mono: 'Courier Prime', 'Consolas', monospace;
+
+  /* Accent & Primary (Terracotta Red-Figure & Radiant Spartan Gold) */
+  --ui-color-primary: oklch(0.48 0.18 42); /* Terracotta amphora orange-red #a84618 */
+  --ui-color-primary-hover: oklch(0.55 0.19 45);
+  --ui-color-primary-active: oklch(0.40 0.17 40);
+  --ui-color-primary-text: oklch(0.98 0.02 85); /* Radiant ivory on terracotta */
+  --ui-color-primary-subtle: oklch(0.48 0.18 42 / 0.18);
+  --ui-color-primary-border: oklch(0.48 0.18 42 / 0.6);
+
+  --ui-color-accent: oklch(0.68 0.16 75); /* Radiant Trojan gold #cf9b2b */
+  --ui-color-accent-hover: oklch(0.75 0.16 78);
+  --ui-color-accent-active: oklch(0.60 0.15 72);
+  --ui-color-accent-text: oklch(0.14 0.03 40);
+  --ui-color-accent-subtle: oklch(0.68 0.16 75 / 0.20);
+  --ui-color-accent-border: oklch(0.68 0.16 75 / 0.6);
+
+  --ui-color-success: oklch(0.42 0.15 140); /* Sacred Olive Green */
+  --ui-color-success-text: oklch(0.98 0 0);
+  --ui-color-success-subtle: oklch(0.42 0.15 140 / 0.18);
+  --ui-color-success-border: oklch(0.42 0.15 140 / 0.5);
+
+  --ui-color-warning: oklch(0.55 0.16 75); /* Bronze Sun */
+  --ui-color-warning-text: oklch(0.98 0.02 85);
+  --ui-color-warning-subtle: oklch(0.55 0.16 75 / 0.20);
+  --ui-color-warning-border: oklch(0.55 0.16 75 / 0.6);
+
+  --ui-color-danger: oklch(0.42 0.22 28); /* Spartan Blood Crimson */
+  --ui-color-danger-text: oklch(0.98 0 0);
+  --ui-color-danger-subtle: oklch(0.42 0.22 28 / 0.18);
+  --ui-color-danger-border: oklch(0.42 0.22 28 / 0.6);
+
+  --ui-color-info: oklch(0.42 0.14 225); /* Aegean Sea Azure */
+  --ui-color-info-text: oklch(0.98 0 0);
+  --ui-color-info-subtle: oklch(0.42 0.14 225 / 0.18);
+  --ui-color-info-border: oklch(0.42 0.14 225 / 0.5);
+
+  /* Geometry & Bevels */
+  --ui-radius-sm: 1px;
+  --ui-radius-md: 2px;
+  --ui-radius-lg: 4px;
+  --ui-radius-xl: 6px;
+  --ui-radius-full: 9999px;
+
+  /* Relief Drop Shadows & Repoussé Bevels */
+  --ui-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 230, 160, 0.35);
+  --ui-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 235, 175, 0.5);
+  --ui-shadow-lg: 0 14px 32px rgba(0, 0, 0, 0.85), inset 0 2px 0 rgba(255, 240, 190, 0.6);
+  --ui-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --ui-shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+
+  /* Component Specific Hooks (Aged Aegean Sand Parchment Cards in Dark Basalt Frames) */
+  --ui-card-bg: oklch(0.90 0.04 78); /* Warm sandy parchment #ebd09c */
+  --ui-card-color: oklch(0.16 0.03 40); /* Deep iron umber ink #231b14 */
+  --ui-card-border: 1px solid oklch(0.52 0.12 65); /* Antique Homeric bronze frame */
+  --ui-card-radius: 2px;
+  --ui-card-header-bg: oklch(0.42 0.18 38); /* Terracotta orange-red banner #9b3d15 */
+  --ui-card-header-border: 1px solid oklch(0.32 0.10 38);
+  --ui-card-header-color: oklch(0.96 0.05 85); /* Radiant gold-white embossed title */
+  --ui-card-footer-bg: oklch(0.86 0.04 76);
+  --ui-card-footer-border: 1px solid oklch(0.52 0.12 65 / 0.5);
+  --ui-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 245, 215, 0.6);
+
+  --ui-input-bg: oklch(0.95 0.025 82); /* Crisp parchment input */
+  --ui-input-color: oklch(0.15 0.03 40); /* Deep dark ink */
+  --ui-input-border: 1px solid oklch(0.52 0.12 65);
+  --ui-input-radius: 2px;
+  --ui-input-shadow: inset 0 1px 3px rgba(45, 25, 10, 0.2);
+
+  --ui-btn-radius: 2px;
+  --ui-btn-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 235, 175, 0.45);
+
+  --ui-badge-radius: 2px;
+  --ui-badge-font-family: var(--ui-font-family);
+
+  /* Table Hooks (Bronze Age Aegean Sand & Terracotta Strategy Table) */
+  --ui-table-bg: oklch(0.90 0.04 78);
+  --ui-table-color: oklch(0.16 0.03 40);
+  --ui-table-border: 1px solid oklch(0.52 0.12 65);
+  --ui-table-border-color: oklch(0.52 0.12 65 / 0.5);
+  --ui-table-radius: 2px;
+  --ui-table-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 245, 215, 0.6);
+  --ui-table-header-bg: oklch(0.42 0.18 38);
+  --ui-table-header-color: oklch(0.96 0.05 85);
+  --ui-table-header-bar-bg: oklch(0.42 0.18 38);
+  --ui-table-header-border: 1px solid oklch(0.32 0.10 38);
+  --ui-table-footer-bar-bg: oklch(0.86 0.04 76);
+  --ui-table-footer-border: 1px solid oklch(0.52 0.12 65 / 0.5);
+  --ui-table-row-stripe: oklch(0.86 0.04 76);
+  --ui-table-row-hover: oklch(0.82 0.06 75);
+  --ui-table-row-selected-bg: oklch(0.68 0.16 75 / 0.35);
+
+  /* Axon Graph Grid, Ports & Edges (Total War Troy Palette) */
+  --ndd-background-dot-small: oklch(0.38 0.06 55);
+  --ndd-background-dot-big: oklch(0.68 0.14 75);
+  --ndd-edge-color: oklch(0.64 0.14 70); /* Cast bronze wire */
+  --ndd-edge-ghost-color: oklch(0.84 0.18 80); /* Radiant lightning of Zeus */
+
+  --ui-port-number: oklch(0.5 0.14 140); /* Sacred Olive (Food) */
+  --ui-port-string: oklch(0.48 0.13 220); /* Aegean Azure (Wood) */
+  --ui-port-boolean: oklch(0.58 0.12 70); /* Mycenaean Stone */
+  --ui-port-object: oklch(0.54 0.18 45); /* Homeric Bronze */
+  --ui-port-array: oklch(0.74 0.16 78); /* Trojan Gold */
+  --ui-port-any: oklch(0.7 0.15 75); /* Olympian Favor */
+}
+
+/* =========================================================================
+   Scoped High-Contrast Deep Iron Umber Typography on Sand Parchment Cards
+   ========================================================================= */
+.theme-troy-strategy ui-card,
+[data-theme='troy-strategy'] ui-card,
+.theme-troy-strategy .card,
+[data-theme='troy-strategy'] .card,
+.theme-troy-strategy ui-table,
+[data-theme='troy-strategy'] ui-table,
+.theme-troy-strategy axon-box,
+[data-theme='troy-strategy'] axon-box,
+.theme-troy-strategy .axon-node-card,
+[data-theme='troy-strategy'] .axon-node-card,
+.theme-troy-strategy [data-axon-node],
+[data-theme='troy-strategy'] [data-axon-node],
+.theme-troy-strategy .parchment-sheet,
+[data-theme='troy-strategy'] .parchment-sheet,
+.theme-troy-strategy .parchment-panel,
+[data-theme='troy-strategy'] .parchment-panel {
+  --ui-color-text: oklch(0.16 0.03 40); /* Deep iron umber ink #231b14 (contrast > 11:1 on parchment) */
+  --ui-color-text-muted: oklch(0.32 0.06 45); /* Rich dark umber/bronze ink (contrast > 7:1) */
+  --ui-color-text-subtle: oklch(0.44 0.05 50); /* Dark weathered terracotta ink */
+  --ui-color-border: oklch(0.52 0.12 65); /* Bronze border */
+  --ui-color-border-subtle: oklch(0.65 0.08 70 / 0.4);
+  --ui-color-surface-elevated: oklch(0.85 0.04 76);
+  --ui-color-surface-hover: oklch(0.82 0.06 75);
+  --ui-color-surface-active: oklch(0.76 0.08 72);
+
+  /* High contrast badge colors on parchment */
+  --ui-color-primary: oklch(0.38 0.18 38);
+  --ui-color-accent: oklch(0.34 0.14 65);
+  --ui-color-success: oklch(0.30 0.14 140);
+  --ui-color-warning: oklch(0.34 0.14 65);
+  --ui-color-danger: oklch(0.34 0.22 28);
+  --ui-color-info: oklch(0.32 0.13 220);
+}

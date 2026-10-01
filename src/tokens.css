@@ -1,0 +1,364 @@
+/**
+ * Design Tokens: Golden Ratio Relative Spacing & OKLCH Neumorphic Minimalist Soft-Matte Engine
+ *
+ * Spacing is strictly relative (em/rem) based on powers of the Golden Ratio (phi ≈ 1.61803398875).
+ * Colors are defined in OKLCH with tactile soft-matte surfaces, diffuse drop-shadows, and WCAG AAA contrast.
+ */
+
+:root {
+  /* =========================================================================
+     1. GOLDEN RATIO SPATIAL TOKENS (Strictly Relative Spacing & Margins)
+     phi = 1.618033988749895
+     ========================================================================= */
+  --ui-phi: 1.61803398875;
+  --ui-spacing-unit: 1em;
+
+  /* Golden ratio geometric progression: scale = base * phi^n */
+  --ui-space-4xs: calc(var(--ui-spacing-unit) * 0.146); /* phi^-4 */
+  --ui-space-3xs: calc(var(--ui-spacing-unit) * 0.236); /* phi^-3 */
+  --ui-space-2xs: calc(var(--ui-spacing-unit) * 0.382); /* phi^-2 */
+  --ui-space-xs: calc(var(--ui-spacing-unit) * 0.618); /* phi^-1 */
+  --ui-space-sm: calc(var(--ui-spacing-unit) * 1); /* phi^0  */
+  --ui-space-md: calc(var(--ui-spacing-unit) * 1.618); /* phi^1  */
+  --ui-space-lg: calc(var(--ui-spacing-unit) * 2.618); /* phi^2  */
+  --ui-space-xl: calc(var(--ui-spacing-unit) * 4.236); /* phi^3  */
+  --ui-space-2xl: calc(var(--ui-spacing-unit) * 6.854); /* phi^4  */
+
+  /* Golden ratio typography and dimensions */
+  --ui-line-height-tight: 1.236;
+  --ui-line-height-normal: 1.618;
+  --ui-font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --ui-font-heading: var(--ui-font-family);
+  --ui-font-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
+  --ui-font-mono: 'SF Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --ui-font-weight-normal: 400;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-bold: 700;
+  --ui-letter-spacing: 0;
+
+  /* Golden ratio border radii (soft pill and curvature) */
+  --ui-radius-sm: var(--ui-space-3xs);
+  --ui-radius-md: var(--ui-space-2xs);
+  --ui-radius-lg: var(--ui-space-xs);
+  --ui-radius-xl: var(--ui-space-sm);
+  --ui-radius-full: 9999px;
+
+  /* Diffuse Tactile Drop Shadows & Micro-Highlights */
+  --ui-shadow-sm: 0 2px 6px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --ui-shadow-md:
+    0 10px 25px -4px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95);
+  --ui-shadow-lg:
+    0 20px 40px -8px rgba(0, 0, 0, 0.16), 0 8px 16px -4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  --ui-shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --ui-shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+  --ui-shadow-glow: 0 0 16px oklch(0.38 0.16 160 / 0.3);
+
+  /* Frosted Glass Overlays */
+  --ui-glass-bg: rgba(255, 255, 255, 0.85);
+  --ui-glass-border: rgba(255, 255, 255, 0.95);
+  --ui-backdrop-blur: 16px;
+  --ui-backdrop-filter: blur(16px) saturate(160%);
+
+  /* Border styles */
+  --ui-border-width: 1px;
+  --ui-border-style: solid;
+
+  /* Transitions */
+  --ui-transition-fast: 146ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ui-transition-base: 236ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ui-transition-slow: 382ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* =========================================================================
+     2. NEUMORPHIC BASE PALETTE & SURFACES (Deep Matte Slate Studio)
+     ========================================================================= */
+  --ui-color-surface: oklch(0.14 0.02 260); /* Deep Slate #0f141c */
+  --ui-color-surface-elevated: oklch(0.18 0.025 260); /* #1a2230 */
+  --ui-color-surface-hover: oklch(0.24 0.03 260); /* #273549 */
+  --ui-color-surface-active: oklch(0.16 0.02 260); /* #141c28 */
+  --ui-color-surface-sunken: oklch(0.1 0.015 260); /* #090d14 */
+  --ui-color-surface-raised: oklch(0.2 0.025 260); /* #202b3d */
+
+  --ui-color-border: oklch(0.28 0.025 260); /* #334155 */
+  --ui-color-border-subtle: oklch(0.2 0.02 260); /* #1e293b */
+  --ui-color-border-hover: oklch(0.48 0.04 260); /* #64748b */
+
+  /* =========================================================================
+     3. TYPOGRAPHY (Crisp High-Contrast Text >= 7:1)
+     ========================================================================= */
+  --ui-color-text: oklch(0.96 0.005 260); /* Crisp White #f8fafc */
+  --ui-color-text-muted: oklch(0.78 0.02 260); /* Readable Light Slate #cbd5e1 */
+  --ui-color-text-subtle: oklch(0.62 0.02 260); /* Medium Slate #94a3b8 */
+
+  /* =========================================================================
+     4. ACCENTS & BRAND (Vibrant Saturated Accents)
+     ========================================================================= */
+  --ui-color-primary: oklch(0.62 0.2 260); /* Vibrant Indigo #6366f1 */
+  --ui-color-primary-hover: oklch(0.7 0.2 260);
+  --ui-color-primary-active: oklch(0.55 0.2 260);
+  --ui-color-primary-subtle: oklch(0.62 0.2 260 / 0.15);
+  --ui-color-primary-border: oklch(0.62 0.2 260 / 0.4);
+  --ui-color-primary-text: oklch(0.98 0 0);
+
+  --ui-color-accent: oklch(0.68 0.18 160); /* Vibrant Emerald #10b981 */
+  --ui-color-accent-hover: oklch(0.76 0.18 160);
+  --ui-color-accent-active: oklch(0.6 0.18 160);
+  --ui-color-accent-subtle: oklch(0.68 0.18 160 / 0.15);
+  --ui-color-accent-border: oklch(0.68 0.18 160 / 0.4);
+  --ui-color-accent-text: oklch(0.98 0 0);
+
+  --ui-color-neutral: oklch(0.25 0.02 260);
+
+  --ui-color-success: oklch(0.68 0.18 145); /* #22c55e */
+  --ui-color-success-hover: oklch(0.75 0.18 145);
+  --ui-color-success-active: oklch(0.6 0.18 145);
+  --ui-color-success-subtle: oklch(0.68 0.18 145 / 0.15);
+  --ui-color-success-border: oklch(0.68 0.18 145 / 0.4);
+  --ui-color-success-text: oklch(0.98 0 0);
+
+  --ui-color-danger: oklch(0.65 0.22 25); /* #ef4444 */
+  --ui-color-danger-hover: oklch(0.72 0.22 25);
+  --ui-color-danger-active: oklch(0.58 0.22 25);
+  --ui-color-danger-subtle: oklch(0.65 0.22 25 / 0.15);
+  --ui-color-danger-border: oklch(0.65 0.22 25 / 0.4);
+  --ui-color-danger-text: oklch(0.98 0 0);
+
+  --ui-color-warning: oklch(0.75 0.18 70); /* #f59e0b */
+  --ui-color-warning-hover: oklch(0.82 0.18 70);
+  --ui-color-warning-active: oklch(0.68 0.18 70);
+  --ui-color-warning-subtle: oklch(0.75 0.18 70 / 0.15);
+  --ui-color-warning-border: oklch(0.75 0.18 70 / 0.4);
+  --ui-color-warning-text: oklch(0.98 0 0);
+
+  --ui-color-info: oklch(0.7 0.16 225); /* #0ea5e9 */
+  --ui-color-info-hover: oklch(0.78 0.16 225);
+  --ui-color-info-active: oklch(0.62 0.16 225);
+  --ui-color-info-subtle: oklch(0.7 0.16 225 / 0.15);
+  --ui-color-info-border: oklch(0.7 0.16 225 / 0.4);
+  --ui-color-info-text: oklch(0.98 0 0);
+
+  --ui-color-focus-ring: oklch(0.62 0.2 260 / 0.5);
+  --ui-focus-outline: 2px solid var(--ui-color-focus-ring);
+  --ui-focus-offset: var(--ui-space-4xs);
+
+  /* =========================================================================
+     5. COMPONENT-SPECIFIC NEUMORPHIC HOOKS (Dark Matte Theme)
+     ========================================================================= */
+  /* Button Hooks */
+  --ui-btn-radius: var(--ui-radius-md);
+  --ui-btn-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  /* Card Hooks */
+  --ui-card-bg: oklch(0.18 0.025 260);
+  --ui-card-color: oklch(0.96 0.005 260);
+  --ui-card-color-muted: oklch(0.78 0.02 260);
+  --ui-card-border: 1px solid oklch(0.28 0.025 260);
+  --ui-card-radius: var(--ui-space-xs, 0.618em);
+  --ui-card-header-bg: oklch(0.22 0.025 260);
+  --ui-card-header-border: 1px solid oklch(0.28 0.025 260);
+  --ui-card-header-color: oklch(0.96 0.005 260);
+
+  /* Header surfaces. Themes restyle these independently of the body.
+     `banner` follows the card header, so a theme header color applies everywhere it is chosen. */
+  --ui-header-surface-flat-bg: var(--ui-color-surface);
+  --ui-header-surface-flat-color: var(--ui-color-text);
+  --ui-header-surface-flat-color-muted: var(--ui-color-text-muted);
+  --ui-header-surface-flat-border: 1px solid var(--ui-color-border-subtle);
+  --ui-header-surface-raised-bg: var(--ui-color-surface-raised);
+  --ui-header-surface-raised-color: var(--ui-color-text);
+  --ui-header-surface-raised-color-muted: var(--ui-color-text-muted);
+  --ui-header-surface-raised-border: 1px solid var(--ui-color-border);
+  --ui-header-surface-sunken-bg: var(--ui-color-surface-sunken);
+  --ui-header-surface-sunken-color: var(--ui-color-text);
+  --ui-header-surface-sunken-color-muted: var(--ui-color-text-muted);
+  --ui-header-surface-sunken-border: 1px solid var(--ui-color-border-subtle);
+  --ui-header-surface-banner-bg: var(--ui-card-header-bg);
+  --ui-header-surface-banner-color: var(--ui-card-header-color);
+  --ui-header-surface-banner-color-muted: color-mix(
+    in oklch,
+    var(--ui-card-header-color) 72%,
+    var(--ui-card-header-bg)
+  );
+  --ui-header-surface-banner-border: var(--ui-card-header-border);
+  --ui-header-surface-accent-bg: var(--ui-color-accent);
+  --ui-header-surface-accent-color: var(--ui-color-accent-text);
+  --ui-header-surface-accent-color-muted: color-mix(
+    in oklch,
+    var(--ui-color-accent-text) 72%,
+    var(--ui-color-accent)
+  );
+  --ui-header-surface-accent-border: 1px solid transparent;
+  --ui-card-footer-bg: oklch(0.16 0.02 260);
+  --ui-card-footer-color: oklch(0.78 0.02 260);
+  --ui-card-footer-border: 1px solid oklch(0.28 0.025 260);
+  --ui-card-shadow: var(--ui-shadow-md);
+
+  /* Stat Card & Item Hooks */
+  --ui-stat-card-bg: oklch(0.18 0.025 260);
+  --ui-stat-card-color: oklch(0.96 0.005 260);
+  --ui-stat-card-border: 1px solid oklch(0.28 0.025 260);
+  --ui-stat-card-radius: var(--ui-space-xs, 0.618em);
+  --ui-stat-header-bg: oklch(0.22 0.025 260);
+  --ui-stat-header-color: oklch(0.96 0.005 260);
+  --ui-stat-title-color: oklch(0.96 0.005 260);
+  --ui-stat-subtitle-color: oklch(0.75 0.02 260);
+  --ui-stat-item-bg: oklch(0.16 0.02 260);
+  --ui-stat-item-color: oklch(0.96 0.005 260);
+  --ui-stat-item-hover-bg: oklch(0.24 0.03 260);
+  --ui-stat-item-hover-border: oklch(0.35 0.03 260);
+  --ui-stat-item-hover-color: #ffffff;
+  --ui-stat-modifier-color: oklch(0.68 0.18 160);
+  --ui-stat-cell-bg: oklch(0.16 0.02 260);
+  --ui-stat-cell-highlight-bg: oklch(0.62 0.2 260 / 0.2);
+
+  /* Input Hooks */
+  --ui-input-bg: oklch(0.12 0.02 260);
+  --ui-input-border: 1px solid oklch(0.28 0.025 260);
+  --ui-input-color: oklch(0.96 0.005 260);
+  --ui-input-placeholder-color: oklch(0.55 0.02 260);
+  --ui-input-radius: var(--ui-radius-md);
+  --ui-input-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* Badge Hooks */
+  --ui-badge-radius: var(--ui-radius-full);
+  --ui-badge-font-family: inherit;
+
+  /* Tab Hooks */
+  --ui-tab-color: oklch(0.7 0.02 260);
+  --ui-tab-active-color: oklch(0.98 0 0);
+  --ui-tab-indicator-color: oklch(0.62 0.2 260);
+
+  /* Switch Hooks */
+  --ui-switch-track-bg: oklch(0.28 0.025 260);
+  --ui-switch-thumb-bg: oklch(0.98 0 0);
+  --ui-switch-radius: var(--ui-radius-full);
+
+  /* Table Hooks */
+  --ui-table-bg: oklch(0.18 0.025 260);
+  --ui-table-color: oklch(0.96 0.005 260);
+  --ui-table-border: 1px solid oklch(0.28 0.025 260);
+  --ui-table-border-color: oklch(0.28 0.025 260);
+  --ui-table-radius: var(--ui-space-xs, 0.618em);
+  --ui-table-shadow: var(--ui-shadow-md);
+  --ui-table-header-bg: oklch(0.22 0.025 260);
+  --ui-table-header-color: oklch(0.96 0.005 260);
+  --ui-table-header-bar-bg: oklch(0.22 0.025 260);
+  --ui-table-header-border: 1px solid oklch(0.28 0.025 260);
+  --ui-table-footer-bar-bg: oklch(0.16 0.02 260);
+  --ui-table-footer-color: oklch(0.78 0.02 260);
+  --ui-table-footer-border: 1px solid oklch(0.28 0.025 260);
+  --ui-table-row-stripe: oklch(0.16 0.02 260);
+  --ui-table-row-hover: oklch(0.24 0.03 260);
+  --ui-table-row-selected-bg: oklch(0.62 0.2 260 / 0.25);
+  --ui-table-page-btn-bg: oklch(0.24 0.03 260);
+  --ui-table-page-btn-color: oklch(0.96 0.005 260);
+
+  /* List Hooks */
+  --ui-list-bg: oklch(0.18 0.025 260);
+  --ui-list-color: oklch(0.96 0.005 260);
+  --ui-list-border: 1px solid oklch(0.28 0.025 260);
+  --ui-list-radius: var(--ui-space-xs, 0.618em);
+  --ui-list-item-bg: oklch(0.18 0.025 260);
+  --ui-list-item-hover-bg: oklch(0.24 0.03 260);
+  --ui-list-item-hover-border: oklch(0.35 0.03 260);
+  --ui-list-item-selected-bg: oklch(0.62 0.2 260 / 0.25);
+
+  /* Tooltip & Popover Hooks */
+  --ui-tooltip-bg: oklch(0.24 0.03 260);
+  --ui-tooltip-color: oklch(0.98 0 0);
+
+  /* Axon Graph Grid, Ports & Edges */
+  --ndd-background-dot-small: oklch(0.3 0.02 260);
+  --ndd-background-dot-big: oklch(0.4 0.025 260);
+  --ndd-edge-color: oklch(0.55 0.04 260);
+  --ndd-edge-ghost-color: oklch(0.68 0.18 160);
+
+  --ui-port-number: oklch(0.68 0.18 150);
+  --ui-port-string: oklch(0.7 0.16 220);
+  --ui-port-boolean: oklch(0.75 0.18 55);
+  --ui-port-object: oklch(0.7 0.2 300);
+  --ui-port-array: oklch(0.72 0.2 350);
+  --ui-port-any: oklch(0.7 0.16 220);
+
+  /* =========================================================================
+     6. SCROLLBAR TOKENS & SLEEK CUSTOM SCROLLBARS
+     ========================================================================= */
+  color-scheme: dark;
+  --ui-scrollbar-width: 6px;
+  --ui-scrollbar-thumb: oklch(0.28 0.025 260);
+  --ui-scrollbar-thumb-hover: oklch(0.62 0.2 260);
+  --ui-scrollbar-thumb-active: oklch(0.7 0.2 260);
+  --ui-scrollbar-track: transparent;
+  --ui-scrollbar-radius: 4px;
+}
+
+/* Modern standard scrollbar styling for all elements */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-scrollbar-thumb, #30363d) var(--ui-scrollbar-track, transparent);
+}
+
+/* WebKit/Blink (Chromium, Electron, Safari) precision sleek scrollbars */
+::-webkit-scrollbar {
+  width: var(--ui-scrollbar-width, 6px);
+  height: var(--ui-scrollbar-width, 6px);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ui-scrollbar-track, transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-scrollbar-thumb, #30363d);
+  border-radius: var(--ui-scrollbar-radius, 4px);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-scrollbar-thumb-hover, #58a6ff);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--ui-scrollbar-thumb-active, #79c0ff);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* =========================================================================
+   7. PANEL BODY & CONTAINER FILL LAYOUTS
+   ========================================================================= */
+.panel-body > ui-table,
+.section-body > ui-table,
+.panel-body > .comp-table,
+.section-body > .comp-table,
+.panel-body > .table-widget-wrapper,
+.section-body > .table-widget-wrapper,
+.panel-body .container-children-list > .node-type-table,
+.section-body .container-children-list > .node-type-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* =========================================================================
+   8. ACCESSIBILITY: PREFERS-REDUCED-MOTION (WCAG 2.1 AA 2.3.3)
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-theme] {
+    --ui-transition-fast: 0ms !important;
+    --ui-transition-base: 0ms !important;
+    --ui-transition-slow: 0ms !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

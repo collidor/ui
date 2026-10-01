@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collidor UI — Component Docs</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <!-- UI library global tokens, pure CSS components & themes -->
+    <link rel="stylesheet" href="/@fs/C:/Users/alyka/projects/collidor/ui/src/tokens.css" />
+    <link rel="stylesheet" href="/@fs/C:/Users/alyka/projects/collidor/ui/src/components.css" />
+    <link rel="stylesheet" href="/@fs/C:/Users/alyka/projects/collidor/ui/src/themes/neumorphic.css" />
+    <link rel="stylesheet" href="/@fs/C:/Users/alyka/projects/collidor/ui/src/themes/rpg-parchment.css" />
+    <link rel="stylesheet" href="/@fs/C:/Users/alyka/projects/collidor/ui/src/themes/troy-strategy.css" />
+    <link rel="stylesheet" href="/@fs/C:/Users/alyka/projects/collidor/ui/src/themes/jewel-artnouveau.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Sidebar -->
+      <nav id="sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-icon">⬡</span>
+          <span class="brand-name">Collidor <strong>UI</strong></span>
+          <select id="theme-selector" title="Switch theme">
+            <option value="">Default</option>
+            <option value="neumorphic">Neumorphic</option>
+            <option value="rpg-parchment">Parchment</option>
+            <option value="troy-strategy">Troy</option>
+            <option value="jewel-artnouveau">Jewel</option>
+          </select>
+        </div>
+
+        <div class="sidebar-search">
+          <input type="search" id="sidebar-search" placeholder="Search components…" autocomplete="off" />
+        </div>
+
+        <ul class="sidebar-nav" id="sidebar-nav">
+          <!-- populated by JS -->
+        </ul>
+      </nav>
+
+      <!-- Main content area -->
+      <main id="content">
+        <div id="sections-container">
+          <!-- sections injected by JS -->
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

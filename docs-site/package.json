@@ -1,0 +1,18 @@
+{
+  "name": "@collidor/ui-docs",
+  "version": "0.0.1",
+  "description": "Interactive documentation & demo for @collidor/ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

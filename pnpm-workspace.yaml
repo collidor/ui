@@ -1,0 +1,6 @@
+packages:
+  - 'docs-site/*'
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@^0.3.1
+  vite-plus: ^0.3.1
+  vitest: ^5.0.0

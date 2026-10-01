@@ -1,0 +1,188 @@
+/**
+ * Neumorphic Minimalist Soft-Matte Glass Theme ("Reagle 2025")
+ *
+ * Inspired by ultra-refined modern interfaces:
+ * - Clean slate canvas background for clear contrast against white frosted cards
+ * - Tactile soft-matte surfaces with subtle diffused drop-shadows and micro-highlights
+ * - Deep charcoal typography meeting strict WCAG AAA contrast standards (>= 7:1)
+ * - Deep saturated jewel ports and crisp contrasting wire paths
+ */
+
+.theme-neumorphic,
+[data-theme='neumorphic'] {
+  /* Canvas Surface & Base (Contrasting Soft Slate Grey) */
+  --ui-color-surface: oklch(0.82 0.008 260); /* Medium Slate Grey Canvas */
+  --ui-color-surface-elevated: oklch(0.88 0.006 260);
+  --ui-color-surface-hover: oklch(0.92 0.006 260);
+  --ui-color-surface-active: oklch(0.84 0.008 260);
+  --ui-color-border: oklch(0.74 0.012 260);
+  --ui-color-border-subtle: oklch(0.82 0.008 260);
+  --ui-color-border-hover: oklch(0.55 0.02 260);
+
+  /* Typography (Deep Charcoal with AAA Contrast >= 7:1) */
+  --ui-color-text: oklch(0.16 0.02 260); /* Deep charcoal (13:1 on white cards, 7.5:1 on slate) */
+  --ui-color-text-muted: oklch(0.38 0.02 260); /* Accessible muted text (5.8:1 on cards) */
+  --ui-color-text-subtle: oklch(0.5 0.015 260);
+  --ui-font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --ui-font-heading: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --ui-font-mono: 'SF Mono', ui-monospace, Menlo, Monaco, monospace;
+
+  /* Accent & Primary (Deep Emerald & Slate - Accessible on Light Surfaces) */
+  --ui-color-primary: oklch(0.25 0.025 260);
+  --ui-color-primary-hover: oklch(0.35 0.025 260);
+  --ui-color-primary-active: oklch(0.18 0.025 260);
+  --ui-color-primary-subtle: oklch(0.25 0.025 260 / 0.1);
+  --ui-color-primary-border: oklch(0.25 0.025 260 / 0.35);
+  --ui-color-primary-text: oklch(0.98 0 0);
+
+  --ui-color-accent: oklch(0.38 0.16 160); /* Deep Emerald (>= 5:1 contrast) */
+  --ui-color-accent-hover: oklch(0.46 0.16 160);
+  --ui-color-accent-active: oklch(0.3 0.16 160);
+  --ui-color-accent-subtle: oklch(0.38 0.16 160 / 0.12);
+  --ui-color-accent-border: oklch(0.38 0.16 160 / 0.35);
+  --ui-color-accent-text: oklch(0.98 0 0);
+
+  --ui-color-success: oklch(0.36 0.16 145);
+  --ui-color-success-hover: oklch(0.44 0.16 145);
+  --ui-color-success-active: oklch(0.28 0.16 145);
+  --ui-color-success-subtle: oklch(0.36 0.16 145 / 0.12);
+  --ui-color-success-border: oklch(0.36 0.16 145 / 0.35);
+  --ui-color-success-text: oklch(0.98 0 0);
+
+  --ui-color-danger: oklch(0.45 0.22 25);
+  --ui-color-danger-hover: oklch(0.53 0.22 25);
+  --ui-color-danger-active: oklch(0.38 0.22 25);
+  --ui-color-danger-subtle: oklch(0.45 0.22 25 / 0.12);
+  --ui-color-danger-border: oklch(0.45 0.22 25 / 0.35);
+  --ui-color-danger-text: oklch(0.98 0 0);
+
+  --ui-color-warning: oklch(0.45 0.18 70); /* Deep Amber (>= 5:1 contrast on white) */
+  --ui-color-warning-hover: oklch(0.53 0.18 70);
+  --ui-color-warning-active: oklch(0.38 0.18 70);
+  --ui-color-warning-subtle: oklch(0.45 0.18 70 / 0.12);
+  --ui-color-warning-border: oklch(0.45 0.18 70 / 0.35);
+  --ui-color-warning-text: oklch(0.98 0 0);
+
+  --ui-color-info: oklch(0.38 0.14 225); /* Deep Azure (>= 5.5:1 contrast on white) */
+  --ui-color-info-hover: oklch(0.46 0.14 225);
+  --ui-color-info-active: oklch(0.3 0.14 225);
+  --ui-color-info-subtle: oklch(0.38 0.14 225 / 0.12);
+  --ui-color-info-border: oklch(0.38 0.14 225 / 0.35);
+  --ui-color-info-text: oklch(0.98 0 0);
+
+  --ui-color-focus-ring: oklch(0.38 0.16 160 / 0.4);
+
+  /* Geometry & Soft Curvature */
+  --ui-radius-sm: var(--ui-space-3xs);
+  --ui-radius-md: var(--ui-space-2xs);
+  --ui-radius-lg: var(--ui-space-xs);
+  --ui-radius-xl: var(--ui-space-sm);
+  --ui-radius-full: 9999px;
+
+  /* Diffuse Tactile Drop Shadows */
+  --ui-shadow-sm: 0 2px 6px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --ui-shadow-md:
+    0 10px 25px -4px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95);
+  --ui-shadow-lg:
+    0 20px 40px -8px rgba(0, 0, 0, 0.16), 0 8px 16px -4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  --ui-shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --ui-shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+
+  /* Frosted Glass Overlays */
+  --ui-glass-bg: rgba(255, 255, 255, 0.85);
+  --ui-glass-border: rgba(255, 255, 255, 0.95);
+  --ui-backdrop-filter: blur(16px) saturate(160%);
+
+  /* Node Card & Container Overrides */
+  --ui-card-bg: oklch(0.96 0.002 260); /* Pristine soft-matte white card */
+  --ui-card-color: oklch(0.16 0.02 260);
+  --ui-card-color-muted: oklch(0.38 0.02 260);
+  --ui-card-border: 1px solid oklch(0.78 0.01 260);
+  --ui-card-radius: var(--ui-space-xs, 0.618em);
+  --ui-card-header-bg: oklch(0.9 0.006 260);
+  --ui-card-header-border: 1px solid oklch(0.8 0.01 260);
+  --ui-card-header-color: oklch(0.18 0.025 260); /* Deep charcoal */
+  --ui-card-footer-bg: oklch(0.92 0.004 260);
+  --ui-card-footer-color: oklch(0.38 0.02 260);
+  --ui-card-footer-border: 1px solid oklch(0.82 0.008 260);
+  --ui-card-shadow: var(--ui-shadow-md);
+
+  /* Stat Card & Item Overrides */
+  --ui-stat-card-bg: oklch(0.96 0.002 260);
+  --ui-stat-card-color: oklch(0.16 0.02 260);
+  --ui-stat-card-border: 1px solid oklch(0.78 0.01 260);
+  --ui-stat-card-radius: var(--ui-space-xs, 0.618em);
+  --ui-stat-header-bg: oklch(0.9 0.006 260);
+  --ui-stat-header-color: oklch(0.18 0.025 260);
+  --ui-stat-title-color: oklch(0.18 0.025 260);
+  --ui-stat-subtitle-color: oklch(0.4 0.015 260);
+  --ui-stat-item-bg: oklch(0.94 0.004 260);
+  --ui-stat-item-color: oklch(0.16 0.02 260);
+  --ui-stat-item-hover-bg: oklch(0.88 0.008 260);
+  --ui-stat-item-hover-border: oklch(0.6 0.02 260);
+  --ui-stat-item-hover-color: oklch(0.14 0.02 260);
+  --ui-stat-modifier-color: oklch(0.38 0.16 160);
+  --ui-stat-cell-bg: oklch(0.94 0.004 260);
+  --ui-stat-cell-highlight-bg: oklch(0.25 0.025 260 / 0.12);
+
+  --ui-input-bg: oklch(0.91 0.005 260);
+  --ui-input-border: 1px solid oklch(0.76 0.01 260);
+  --ui-input-color: oklch(0.16 0.02 260);
+  --ui-input-placeholder-color: oklch(0.48 0.015 260);
+  --ui-input-radius: var(--ui-radius-full);
+  --ui-input-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  --ui-btn-radius: var(--ui-radius-full);
+  --ui-btn-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  --ui-badge-radius: var(--ui-radius-full);
+
+  /* Table Hooks (Minimalist soft-matte slate & white frosted table) */
+  --ui-table-bg: oklch(0.96 0.002 260);
+  --ui-table-color: oklch(0.16 0.02 260);
+  --ui-table-border: 1px solid oklch(0.78 0.01 260);
+  --ui-table-border-color: oklch(0.82 0.008 260);
+  --ui-table-radius: var(--ui-space-xs, 0.618em);
+  --ui-table-shadow: var(--ui-shadow-md);
+  --ui-table-header-bg: oklch(0.9 0.006 260);
+  --ui-table-header-color: oklch(0.18 0.025 260);
+  --ui-table-header-bar-bg: oklch(0.9 0.006 260);
+  --ui-table-header-border: 1px solid oklch(0.8 0.01 260);
+  --ui-table-footer-bar-bg: oklch(0.92 0.004 260);
+  --ui-table-footer-color: oklch(0.38 0.02 260);
+  --ui-table-footer-border: 1px solid oklch(0.82 0.008 260);
+  --ui-table-row-stripe: oklch(0.93 0.004 260);
+  --ui-table-row-hover: oklch(0.89 0.008 260);
+  --ui-table-row-selected-bg: oklch(0.38 0.16 160 / 0.15);
+  --ui-table-page-btn-bg: oklch(0.92 0.006 260);
+  --ui-table-page-btn-color: oklch(0.18 0.025 260);
+
+  /* List Hooks */
+  --ui-list-bg: oklch(0.96 0.002 260);
+  --ui-list-color: oklch(0.16 0.02 260);
+  --ui-list-border: 1px solid oklch(0.78 0.01 260);
+  --ui-list-radius: var(--ui-space-xs, 0.618em);
+  --ui-list-item-bg: oklch(0.96 0.002 260);
+  --ui-list-item-hover-bg: oklch(0.91 0.006 260);
+  --ui-list-item-hover-border: oklch(0.6 0.02 260);
+  --ui-list-item-selected-bg: oklch(0.38 0.16 160 / 0.15);
+
+  /* Tooltip Hooks */
+  --ui-tooltip-bg: oklch(0.2 0.02 260);
+  --ui-tooltip-color: oklch(0.96 0.01 260);
+
+  /* Axon Graph Grid, Ports & Edges (High Contrast Saturated Palette) */
+  --ndd-background-dot-small: oklch(0.7 0.012 260);
+  --ndd-background-dot-big: oklch(0.55 0.02 260);
+  --ndd-edge-color: oklch(0.46 0.035 260); /* Crisp dark wire */
+  --ndd-edge-ghost-color: oklch(0.38 0.16 160);
+
+  --ui-port-number: oklch(0.36 0.16 150); /* Forest Emerald */
+  --ui-port-string: oklch(0.38 0.15 220); /* Ocean Blue */
+  --ui-port-boolean: oklch(0.44 0.17 55); /* Rust Amber */
+  --ui-port-object: oklch(0.4 0.18 300); /* Royal Purple */
+  --ui-port-array: oklch(0.42 0.18 350); /* Deep Rose */
+  --ui-port-any: oklch(0.38 0.15 220);
+}

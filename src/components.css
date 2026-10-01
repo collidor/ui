@@ -1,0 +1,421 @@
+/**
+ * Pure CSS Components & Layout Primitives for Collidor UI
+ *
+ * Lightweight, accessible, zero-JavaScript presentation components.
+ * Enforces Golden Ratio spacing and OKLCH color engine tokens.
+ */
+
+/* =========================================================================
+   1. BADGE (.ui-badge)
+   ========================================================================= */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+  font-family: var(--ui-badge-font-family, var(--ui-font-mono, monospace));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1;
+  border-radius: var(--ui-badge-radius, var(--ui-radius-full, 9999px));
+  font-size: 0.75rem;
+  padding: var(--ui-space-2xs, 0.382em) var(--ui-space-sm, 1em);
+  gap: var(--ui-space-xs, 0.618em);
+  background-color: var(--ui-badge-neutral-bg, var(--ui-color-surface-hover, oklch(0.22 0.025 260)));
+  color: var(--ui-badge-neutral-color, var(--ui-color-text-muted, oklch(0.70 0.02 260)));
+  border-color: var(--ui-badge-neutral-border, var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5)));
+}
+
+.ui-badge--sm, .ui-badge.size-sm {
+  font-size: 0.65rem;
+  padding: var(--ui-space-3xs, 0.236em) var(--ui-space-xs, 0.618em);
+  gap: var(--ui-space-2xs, 0.382em);
+}
+
+.ui-badge--md, .ui-badge.size-md {
+  font-size: 0.75rem;
+  padding: var(--ui-space-2xs, 0.382em) var(--ui-space-sm, 1em);
+  gap: var(--ui-space-xs, 0.618em);
+}
+
+/* Badge Color Variants */
+.ui-badge--primary, .ui-badge.variant-primary {
+  background-color: var(--ui-badge-primary-bg, var(--ui-color-primary-subtle, oklch(0.65 0.19 230 / 0.15)));
+  color: var(--ui-badge-primary-color, var(--ui-color-primary, oklch(0.65 0.19 230)));
+  border-color: var(--ui-badge-primary-border, var(--ui-color-primary-border, oklch(0.65 0.19 230 / 0.45)));
+}
+.ui-badge--accent, .ui-badge.variant-accent {
+  background-color: var(--ui-badge-accent-bg, var(--ui-color-accent-subtle, oklch(0.75 0.18 190 / 0.15)));
+  color: var(--ui-badge-accent-color, var(--ui-color-accent, oklch(0.75 0.18 190)));
+  border-color: var(--ui-badge-accent-border, var(--ui-color-accent-border, oklch(0.75 0.18 190 / 0.45)));
+}
+.ui-badge--success, .ui-badge.variant-success {
+  background-color: var(--ui-badge-success-bg, var(--ui-color-success-subtle, oklch(0.72 0.18 145 / 0.15)));
+  color: var(--ui-badge-success-color, var(--ui-color-success, oklch(0.72 0.18 145)));
+  border-color: var(--ui-badge-success-border, var(--ui-color-success-border, oklch(0.72 0.18 145 / 0.45)));
+}
+.ui-badge--warning, .ui-badge.variant-warning {
+  background-color: var(--ui-badge-warning-bg, var(--ui-color-warning-subtle, oklch(0.80 0.18 80 / 0.15)));
+  color: var(--ui-badge-warning-color, var(--ui-color-warning, oklch(0.80 0.18 80)));
+  border-color: var(--ui-badge-warning-border, var(--ui-color-warning-border, oklch(0.80 0.18 80 / 0.45)));
+}
+.ui-badge--danger, .ui-badge.variant-danger {
+  background-color: var(--ui-badge-danger-bg, var(--ui-color-danger-subtle, oklch(0.65 0.22 25 / 0.15)));
+  color: var(--ui-badge-danger-color, var(--ui-color-danger, oklch(0.65 0.22 25)));
+  border-color: var(--ui-badge-danger-border, var(--ui-color-danger-border, oklch(0.65 0.22 25 / 0.45)));
+}
+.ui-badge--info, .ui-badge.variant-info {
+  background-color: var(--ui-badge-info-bg, var(--ui-color-info-subtle, oklch(0.70 0.16 230 / 0.15)));
+  color: var(--ui-badge-info-color, var(--ui-color-info, oklch(0.70 0.16 230)));
+  border-color: var(--ui-badge-info-border, var(--ui-color-info-border, oklch(0.70 0.16 230 / 0.45)));
+}
+.ui-badge--neutral, .ui-badge.variant-neutral {
+  background-color: var(--ui-badge-neutral-bg, var(--ui-color-surface-hover, oklch(0.22 0.025 260)));
+  color: var(--ui-badge-neutral-color, var(--ui-color-text-muted, oklch(0.70 0.02 260)));
+  border-color: var(--ui-badge-neutral-border, var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5)));
+}
+
+/* Badge dot */
+.ui-badge__dot,
+.ui-badge--dot::before {
+  content: '';
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+
+/* =========================================================================
+   2. SKELETON (.ui-skeleton)
+   ========================================================================= */
+@keyframes ui-skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.ui-skeleton {
+  display: block;
+  box-sizing: border-box;
+  width: var(--ui-skeleton-width, 100%);
+  height: var(--ui-skeleton-height, 1em);
+  border-radius: var(--ui-radius-sm, 0.146em);
+  background-color: var(--ui-color-surface, oklch(0.18 0.02 260));
+  position: relative;
+  overflow: hidden;
+}
+
+.ui-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 0.08) 50%,
+    transparent 100%
+  );
+  animation: ui-skeleton-shimmer 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton::after {
+    animation: none;
+    display: none;
+  }
+}
+
+.ui-skeleton--circle {
+  border-radius: 50%;
+  width: var(--ui-skeleton-width, 40px);
+  height: var(--ui-skeleton-height, 40px);
+}
+.ui-skeleton--rounded {
+  border-radius: var(--ui-radius-md, 0.236em);
+  height: var(--ui-skeleton-height, 36px);
+}
+.ui-skeleton--rect {
+  border-radius: 0;
+  height: var(--ui-skeleton-height, 80px);
+}
+.ui-skeleton--card {
+  border-radius: var(--ui-radius-md, 0.236em);
+  height: var(--ui-skeleton-height, 140px);
+}
+
+
+/* =========================================================================
+   3. STAT GRID (.ui-stat-grid)
+   ========================================================================= */
+.ui-stat-grid {
+  display: grid;
+  grid-template-columns: var(--stat-grid-columns, repeat(auto-fit, minmax(min(100%, 60px), 1fr)));
+  gap: var(--ui-stat-grid-gap, var(--ui-space-4xs, 0.146em));
+  box-sizing: border-box;
+  width: 100%;
+  border-radius: var(--ui-radius-sm, 0.146em);
+  overflow: hidden;
+}
+
+.ui-stat-grid--divided {
+  gap: 0;
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.6));
+}
+
+.ui-stat-grid--divided > * {
+  border-right: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5));
+  border-bottom: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5));
+}
+.ui-stat-grid--divided > *:last-child {
+  border-right: none;
+}
+
+.ui-stat-grid--dense {
+  gap: 2px;
+}
+
+
+/* =========================================================================
+   4. STAT STACK (.ui-stat-stack)
+   ========================================================================= */
+.ui-stat-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  gap: var(--stat-stack-gap, var(--ui-space-sm, 1.000em));
+  border-radius: var(--ui-stat-stack-radius, var(--ui-radius-lg, 0.382em));
+}
+
+.ui-stat-stack--joined {
+  gap: 0;
+}
+
+.ui-stat-stack--joined > *:not(:last-child) {
+  border-bottom: none !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.ui-stat-stack--joined > *:not(:first-child) {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+
+/* =========================================================================
+   5. STAT CELL (.ui-stat-cell)
+   ========================================================================= */
+.ui-stat-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--ui-space-4xs, 0.146em) var(--ui-space-3xs, 0.236em);
+  box-sizing: border-box;
+  background: var(--ui-stat-cell-bg, var(--ui-card-bg, var(--ui-color-surface-elevated, oklch(0.22 0.025 260))));
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5));
+  border-radius: var(--ui-radius-sm, 0.146em);
+  text-align: center;
+  user-select: none;
+  font-family: var(--ui-font-family, ui-sans-serif, system-ui);
+  transition:
+    background var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.ui-stat-cell--highlight {
+  background: var(--ui-stat-cell-highlight-bg, oklch(from var(--ui-color-primary, oklch(0.65 0.19 230)) l c h / 0.2));
+  border-color: var(--ui-color-primary, oklch(0.65 0.19 230));
+  box-shadow: inset 0 0 0 1px var(--ui-color-primary, oklch(0.65 0.19 230));
+}
+
+.ui-stat-cell--active {
+  background: var(--ui-color-surface-active, oklch(0.28 0.03 260));
+  border-color: var(--ui-color-primary, oklch(0.65 0.19 230));
+}
+
+.ui-stat-cell__label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ui-stat-cell-label-color, var(--ui-color-text-muted, oklch(0.7 0.02 260)));
+  line-height: 1.2;
+}
+
+.ui-stat-cell__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: var(--ui-font-mono, monospace);
+  color: var(--ui-stat-cell-color, var(--ui-color-text, oklch(0.96 0.01 260)));
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+}
+
+.ui-stat-cell__modifier {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ui-color-primary, oklch(0.65 0.19 230));
+}
+
+.ui-stat-cell__subtext {
+  font-size: 0.60rem;
+  color: var(--ui-stat-cell-subtext-color, var(--ui-color-text-subtle, oklch(0.65 0.02 260)));
+  line-height: 1.2;
+}
+
+
+/* =========================================================================
+   6. STAT ITEM (.ui-stat-item)
+   ========================================================================= */
+.ui-stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--ui-space-4xs, 0.146em) var(--ui-space-3xs, 0.236em);
+  background: var(--ui-stat-item-bg, var(--ui-card-bg, var(--ui-color-surface-elevated, oklch(0.22 0.025 260))));
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.4));
+  border-radius: var(--ui-radius-sm, 0.146em);
+  font-size: 0.78rem;
+  font-family: var(--ui-font-family, ui-sans-serif, system-ui);
+  color: var(--ui-stat-item-color, var(--ui-card-color, var(--ui-color-text, oklch(0.96 0.01 260))));
+  user-select: none;
+  gap: var(--ui-space-3xs, 0.236em);
+  transition:
+    background var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)),
+    color var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.ui-stat-item--clickable {
+  cursor: pointer;
+}
+.ui-stat-item--clickable:hover {
+  background: var(--ui-stat-item-hover-bg, var(--ui-color-surface-hover, oklch(0.25 0.03 260)));
+  border-color: var(--ui-stat-item-hover-border, var(--ui-color-border, oklch(0.40 0.04 260 / 0.6)));
+}
+.ui-stat-item--clickable:focus-visible {
+  outline: 2px solid var(--ui-color-focus, oklch(0.7 0.15 250));
+  outline-offset: 2px;
+}
+.ui-stat-item--active {
+  background: var(--ui-color-surface-active, oklch(0.28 0.03 260));
+  border-color: var(--ui-color-primary, oklch(0.65 0.19 230));
+}
+.ui-stat-item__label {
+  font-weight: 500;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+}
+.ui-stat-item__value {
+  font-weight: 700;
+  font-family: var(--ui-font-mono, monospace);
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+}
+
+
+/* =========================================================================
+   7. BREADCRUMBS (.ui-breadcrumbs)
+   ========================================================================= */
+.ui-breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3xs, 0.236em);
+  font-family: var(--ui-font-family, ui-sans-serif, system-ui);
+  font-size: 0.825rem;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ui-breadcrumbs li,
+.ui-breadcrumbs .ui-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-3xs, 0.236em);
+}
+
+.ui-breadcrumbs li + li::before,
+.ui-breadcrumbs .ui-breadcrumb-item + .ui-breadcrumb-item::before {
+  content: var(--ui-breadcrumbs-separator, '/');
+  color: var(--ui-color-text-subtle, oklch(0.50 0.02 260));
+  user-select: none;
+  font-size: 0.75rem;
+}
+
+.ui-breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.ui-breadcrumbs a:hover {
+  color: var(--ui-color-primary, oklch(0.65 0.19 230));
+}
+
+.ui-breadcrumbs a:focus-visible {
+  outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+  outline-offset: 2px;
+  border-radius: var(--ui-radius-xs, 0.146em);
+}
+
+.ui-breadcrumbs [aria-current="page"],
+.ui-breadcrumbs .active {
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+  font-weight: 600;
+}
+
+
+/* =========================================================================
+   8. LINK (.ui-link)
+   ========================================================================= */
+.ui-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-4xs, 4px);
+  font-family: var(--ui-font-family, ui-sans-serif, system-ui);
+  font-size: 0.875rem;
+  color: var(--ui-color-primary, oklch(0.65 0.19 230));
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.ui-link:hover {
+  text-decoration: underline;
+  color: var(--ui-color-primary-hover, oklch(0.70 0.20 230));
+}
+
+.ui-link:focus-visible {
+  outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+  outline-offset: 2px;
+  border-radius: var(--ui-radius-xs, 0.146em);
+}
+
+.ui-link[aria-disabled="true"],
+.ui-link--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.ui-link--subtle {
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+}
+.ui-link--subtle:hover {
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+}

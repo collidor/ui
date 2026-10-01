@@ -1,0 +1,145 @@
+/**
+ * Art Nouveau Jewel & Dark Studio Playmat Theme
+ *
+ * Inspired by Lalique Art Nouveau jewel craftsmanship & dark creative studio design:
+ * - Carved Jadeite / Chrysoprase Seafoam primary accents (#4ea388)
+ * - Chased Antique Gold & Homeric Bronze ornamental borders & highlights (#b89052, #9b7536)
+ * - Plique-à-jour Enamel Slate / Steel Blue secondary structures & badges (#5b7b88)
+ * - Deep Obsidian & Patinated Dark surfaces (#161616, #222222, #2c2c2c)
+ * - Warm Ivory Cream typography & icons (#fff4dd)
+ */
+
+.theme-jewel-artnouveau,
+[data-theme="jewel"],
+[data-theme="jewel-artnouveau"] {
+  /* Jewel Color System */
+  --ui-jewel-jade: #4ea388;
+  --ui-jewel-jade-hover: #5ca68c;
+  --ui-jewel-jade-active: #3e8870;
+  --ui-jewel-jade-subtle: rgba(78, 163, 136, 0.18);
+  --ui-jewel-jade-glow: 0 0 14px rgba(78, 163, 136, 0.35);
+
+  --ui-jewel-gold: #b89052;
+  --ui-jewel-gold-hover: #c9a365;
+  --ui-jewel-gold-active: #9b7536;
+  --ui-jewel-gold-border: #9b7536;
+  --ui-jewel-gold-subtle: rgba(184, 144, 82, 0.16);
+  --ui-jewel-gold-glow: 0 0 12px rgba(184, 144, 82, 0.3);
+
+  --ui-jewel-slate: #5b7b88;
+  --ui-jewel-slate-hover: #6d8f9d;
+  --ui-jewel-slate-active: #47626d;
+  --ui-jewel-slate-subtle: rgba(91, 123, 136, 0.18);
+
+  --ui-jewel-dark: #161616;
+  --ui-jewel-surface: #222222;
+  --ui-jewel-bar: #2c2c2c;
+  --ui-jewel-elevated: #1e1e1e;
+  --ui-jewel-cream: #fff4dd;
+
+  /* Global Surface Tokens */
+  --ui-color-surface: #161616;
+  --ui-color-surface-elevated: #1e1e1e;
+  --ui-color-surface-hover: #262626;
+  --ui-color-surface-active: #141414;
+  --ui-color-border: #333333;
+  --ui-color-border-subtle: #242424;
+  --ui-color-border-hover: #9b7536;
+
+  /* Typography */
+  --ui-color-text: #fff4dd;
+  --ui-color-text-muted: #d5cbb8;
+  --ui-color-text-subtle: #968c7c;
+
+  /* Primary Accent: Jade Chrysoprase */
+  --ui-color-primary: #4ea388;
+  --ui-color-primary-hover: #5ca68c;
+  --ui-color-primary-active: #3e8870;
+  --ui-color-primary-subtle: rgba(78, 163, 136, 0.16);
+  --ui-color-primary-border: #4ea388;
+  --ui-color-primary-text: #ffffff;
+
+  /* Secondary Accent: Antique Chased Gold */
+  --ui-color-accent: #b89052;
+  --ui-color-accent-hover: #c9a365;
+  --ui-color-accent-active: #9b7536;
+  --ui-color-accent-subtle: rgba(184, 144, 82, 0.16);
+  --ui-color-accent-border: #9b7536;
+  --ui-color-accent-text: #ffffff;
+
+  /* Tertiary Accent: Enamel Slate */
+  --ui-color-tertiary: #5b7b88;
+  --ui-color-tertiary-hover: #6d8f9d;
+  --ui-color-tertiary-border: #5b7b88;
+
+  /* Focus and Glows */
+  --ui-color-focus-ring: rgba(184, 144, 82, 0.5);
+  --ui-focus-outline: 2px solid #b89052;
+
+  /* Button Styling */
+  --ui-btn-radius: 4px;
+  --ui-btn-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+  /* Card and Studio Container Hooks */
+  --ui-card-bg: #1c1c1c;
+  --ui-card-border: 1px solid #333333;
+  --ui-card-header-bg: #242424;
+  --ui-card-header-border: 1px solid #383838;
+}
+
+/* Specific Jewel-themed button overrides */
+button.variant-jewel-primary,
+.jewel-btn-primary {
+  background: linear-gradient(180deg, #5ca68c 0%, #4ea388 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #3e8870 !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+button.variant-jewel-primary:hover,
+.jewel-btn-primary:hover {
+  background: linear-gradient(180deg, #69b69b 0%, #5ca68c 100%) !important;
+  border-color: #4ea388 !important;
+  box-shadow:
+    0 3px 10px rgba(78, 163, 136, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+button.variant-jewel-secondary,
+.jewel-btn-secondary {
+  background: linear-gradient(180deg, #c9a365 0%, #b89052 100%) !important;
+  color: #1a160f !important;
+  border: 1px solid #9b7536 !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+button.variant-jewel-secondary:hover,
+.jewel-btn-secondary:hover {
+  background: linear-gradient(180deg, #d8b274 0%, #c9a365 100%) !important;
+  box-shadow:
+    0 3px 10px rgba(184, 144, 82, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+button.variant-jewel-tertiary,
+.jewel-btn-tertiary {
+  background: linear-gradient(180deg, #6d8f9d 0%, #5b7b88 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #47626d !important;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+button.variant-jewel-tertiary:hover,
+.jewel-btn-tertiary:hover {
+  background: linear-gradient(180deg, #7da1b0 0%, #6d8f9d 100%) !important;
+  box-shadow:
+    0 3px 10px rgba(91, 123, 136, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}

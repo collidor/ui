@@ -1,0 +1,50 @@
+{
+    "name": "@collidor/ui",
+    "version": "0.1.0",
+    "license": "MIT",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "publish": {
+        "include": [
+            "./src/**/*",
+            "README.md",
+            "deno.json",
+            "deno.lock",
+            "LICENSE"
+        ],
+        "exclude": [
+            "dist",
+            "docs-site",
+            "src/**/__tests__/**/*",
+            "src/env.d.ts"
+        ]
+    },
+    "tasks": {
+        "build": "npm run build",
+        "test": "npm test"
+    },
+    "imports": {
+        "lit": "npm:lit@^3.3.0",
+        "lit/": "npm:/lit@^3.3.0/"
+    },
+    "lint": {
+        "rules": {
+            "exclude": [
+                "no-explicit-any",
+                "no-window",
+                "no-window-prefix"
+            ]
+        }
+    },
+    "compilerOptions": {
+        "lib": [
+            "deno.window",
+            "deno.ns",
+            "dom.iterable",
+            "ESNext",
+            "DOM"
+        ],
+        "noImplicitOverride": false
+    }
+}
