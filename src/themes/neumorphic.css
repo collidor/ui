@@ -113,13 +113,20 @@
   --ui-input-border: 1px solid oklch(0.76 0.01 260);
   --ui-input-color: oklch(0.16 0.02 260);
   --ui-input-placeholder-color: oklch(0.48 0.015 260);
-  --ui-input-radius: var(--ui-radius-full);
+  --ui-input-radius: var(--ui-radius-md);
   --ui-input-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 
-  --ui-btn-radius: var(--ui-radius-full);
+  --ui-btn-radius: var(--ui-radius-md);
   --ui-btn-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 
   --ui-badge-radius: var(--ui-radius-full);
+
+  /* Popover, Menu & Select Hooks */
+  --ui-popover-bg: oklch(0.96 0.002 260);
+  --ui-menu-bg: oklch(0.96 0.002 260);
+  --ui-menu-radius: var(--ui-radius-md);
+  --ui-select-menu-radius: var(--ui-radius-md);
+  --ui-select-menu-bg: oklch(0.96 0.002 260);
 
   /* Table Hooks (Minimalist soft-matte slate & white frosted table) */
   --ui-table-bg: oklch(0.96 0.002 260);

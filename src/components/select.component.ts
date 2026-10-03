@@ -132,13 +132,17 @@ export class UISelect extends UIElement {
     ::picker(select) {
       appearance: base-select;
       border: 1px solid var(--ui-color-border, oklch(0.32 0.03 260));
+      background-color: var(
+        --ui-select-menu-bg,
+        var(--ui-color-surface-elevated, oklch(0.18 0.025 260))
+      );
       background: var(
-        --ui-color-surface-elevated,
-        oklch(0.18 0.025 260)
+        --ui-select-menu-bg,
+        var(--ui-color-surface-elevated, oklch(0.18 0.025 260))
       );
       backdrop-filter: var(--ui-backdrop-filter, blur(16px));
-      border-radius: var(--ui-input-radius, var(--ui-radius-md, 0.236em));
-      box-shadow: var(--ui-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.3));
+      border-radius: var(--ui-select-menu-radius, var(--ui-menu-radius, var(--ui-radius-md, 0.236em)));
+      box-shadow: var(--ui-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.2));
       padding: var(--ui-space-4xs, 0.146em);
       margin-block: var(--ui-space-4xs, 0.146em);
       min-width: anchor-size(width);
@@ -146,25 +150,6 @@ export class UISelect extends UIElement {
       font-family: var(--ui-font-family, ui-sans-serif, system-ui);
       font-size: inherit;
       color: var(--ui-color-text, oklch(0.96 0.01 260));
-      opacity: 0;
-      transform: translateY(-4px) scale(0.98);
-      transition:
-        opacity var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)),
-        transform var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)),
-        display var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)) allow-discrete,
-        overlay var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)) allow-discrete;
-    }
-
-    :open::picker(select) {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    @starting-style {
-      :open::picker(select) {
-        opacity: 0;
-        transform: translateY(-4px) scale(0.98);
-      }
     }
 
     option {
