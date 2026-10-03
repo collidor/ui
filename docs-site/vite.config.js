@@ -9,9 +9,14 @@ export default defineConfig({
   base: './',
   root: '.',
   resolve: {
-    alias: {
-      '@collidor/ui': resolve(uiSrc, 'index.ts'),
-    },
+    alias: [
+      { find: '@collidor/ui', replacement: resolve(uiSrc, 'index.ts') },
+      { find: /^lit\/(.*)/, replacement: resolve(__dirname, 'node_modules/lit/$1') },
+      { find: 'lit', replacement: resolve(__dirname, 'node_modules/lit') },
+      { find: /^@lit\/(.*)/, replacement: resolve(__dirname, 'node_modules/@lit/$1') },
+      { find: /^lit-html(\/.*)?$/, replacement: resolve(__dirname, 'node_modules/lit-html$1') },
+      { find: /^lit-element(\/.*)?$/, replacement: resolve(__dirname, 'node_modules/lit-element$1') },
+    ],
   },
   server: {
     fs: {

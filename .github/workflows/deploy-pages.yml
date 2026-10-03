@@ -36,6 +36,9 @@ jobs:
         run: npm ci
         working-directory: docs-site
 
+      - name: Link node_modules to root
+        run: ln -s docs-site/node_modules ./node_modules
+
       - name: Build demo site
         run: npm run build
         working-directory: docs-site
