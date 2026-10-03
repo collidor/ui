@@ -2,8 +2,10 @@ import {
   css,
   html,
   nothing,
+  type CSSResult,
   type CSSResultGroup,
   type PropertyDeclaration,
+  type PropertyDeclarations,
   type TemplateResult,
 } from 'lit'
 import { UIElement, bool } from './base.element.ts'
@@ -33,7 +35,7 @@ export const headerSurfaceProperty: PropertyDeclaration = {
  * `--ui-header-color` first, and secondary header text `--ui-header-color-muted`,
  * then its own fallback, so an unset surface keeps the component's current look.
  */
-export const headerSurfaceStyle = css`
+export const headerSurfaceStyle: CSSResult = css`
   :host([header-surface='flat']) {
     --ui-header-bg: var(--ui-header-surface-flat-bg, var(--ui-color-surface));
     --ui-header-color: var(--ui-header-surface-flat-color, var(--ui-color-text));
@@ -133,7 +135,7 @@ export function headerToggleIcon(collapsible: boolean): TemplateResult | typeof 
 }
 
 export abstract class UIHeaderedElement extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     headerSurface: headerSurfaceProperty,
     collapsible: bool(),
     collapsed: bool(),

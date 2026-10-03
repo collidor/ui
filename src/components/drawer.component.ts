@@ -1,4 +1,4 @@
-import { css, html, nothing, type PropertyValues } from "lit";
+import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { bool } from "../base.element.ts";
 import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
@@ -9,7 +9,7 @@ export type DrawerPlacement = "left" | "right" | "top" | "bottom";
 let drawerIdCounter = 0;
 
 export class UIDrawer extends UIHeaderedElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         open: bool(),
         placement: { type: String, reflect: true },
@@ -18,7 +18,7 @@ export class UIDrawer extends UIHeaderedElement {
         closable: bool(),
     };
 
-    static styles = [
+    static override styles: CSSResultGroup = [
         UIHeaderedElement.styles,
         css`
             :host {
@@ -326,7 +326,7 @@ export class UIDrawer extends UIHeaderedElement {
         }
     }
 
-    protected override render() {
+    protected override render(): unknown {
         return html`
             <div
                 class="drawer-backdrop"
@@ -395,8 +395,3 @@ if (!customElements.get(UI_TAG_NAMES.DRAWER)) {
     customElements.define(UI_TAG_NAMES.DRAWER, UIDrawer);
 }
 
-declare global {
-    interface HTMLElementTagNameMap {
-        "ui-drawer": UIDrawer;
-    }
-}

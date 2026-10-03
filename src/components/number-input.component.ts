@@ -1,10 +1,10 @@
-import { css, html, nothing, type PropertyValues } from "lit";
+import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { live } from "lit/directives/live.js";
 import { bool, UIElement } from "../base.element.ts";
 import { type Size, UI_TAG_NAMES } from "../constants.ts";
 
 export class UINumberInput extends UIElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         value: { type: Number, reflect: true },
         min: { type: Number, reflect: true, useDefault: true },
         max: { type: Number, reflect: true, useDefault: true },
@@ -20,7 +20,7 @@ export class UINumberInput extends UIElement {
         invalid: bool("invalid"),
     };
 
-    static styles = css`
+    static override styles: CSSResultGroup = css`
         :host {
             display: inline-block;
             vertical-align: middle;
@@ -302,7 +302,7 @@ export class UINumberInput extends UIElement {
                     }
                 }
 
-                protected override render() {
+                protected override render(): unknown {
                     const effectiveLabel = this.ariaLabel || this.label || nothing;
 
                     return html`
@@ -361,8 +361,3 @@ export class UINumberInput extends UIElement {
                 customElements.define(UI_TAG_NAMES.NUMBER_INPUT, UINumberInput);
             }
 
-            declare global {
-                interface HTMLElementTagNameMap {
-                    "ui-number-input": UINumberInput;
-                }
-            }

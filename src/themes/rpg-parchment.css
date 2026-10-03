@@ -102,24 +102,6 @@
   --ui-card-footer-border:  1px solid oklch(0.65 0.08 60 / 0.5);
   --ui-card-shadow:         0 4px 14px rgba(60, 30, 10, 0.22);
 
-  /* ── Stat cards ──────────────────────────────────────────────────────── */
-  --ui-stat-card-bg:           oklch(0.97 0.014 82);
-  --ui-stat-card-color:        oklch(0.16 0.025 45);
-  --ui-stat-card-border:       1px solid oklch(0.55 0.10 50);
-  --ui-stat-card-radius:       2px;
-  --ui-stat-header-bg:         oklch(0.38 0.18 20);
-  --ui-stat-header-color:      oklch(0.97 0.014 82);
-  --ui-stat-title-color:       oklch(0.97 0.014 82);
-  --ui-stat-subtitle-color:    oklch(0.82 0.06 80);
-  --ui-stat-item-bg:           oklch(0.93 0.022 82);
-  --ui-stat-item-color:        oklch(0.16 0.025 45);
-  --ui-stat-item-hover-bg:     oklch(0.88 0.035 78);
-  --ui-stat-item-hover-border: oklch(0.45 0.14 30);
-  --ui-stat-item-hover-color:  oklch(0.12 0.03 40);
-  --ui-stat-modifier-color:    oklch(0.38 0.18 20);
-  --ui-stat-cell-bg:           oklch(0.93 0.022 82);
-  --ui-stat-cell-highlight-bg: oklch(0.38 0.18 20 / 0.14);
-
   /* ── Form inputs ─────────────────────────────────────────────────────── */
   --ui-input-bg:                oklch(0.97 0.014 82);
   --ui-input-color:             oklch(0.16 0.025 45);

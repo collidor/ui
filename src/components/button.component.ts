@@ -1,9 +1,13 @@
-import { css, html, nothing } from "lit";
+import { css,
+    html,
+    nothing,
+    type CSSResultGroup,
+    type PropertyDeclarations, } from 'lit';
 import { bool, UIElement } from "../base.element.ts";
 import { type Size, UI_TAG_NAMES, type Variant } from "../constants.ts";
 
 export class UIButton extends UIElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         variant: { type: String, reflect: true },
         size: { type: String, reflect: true },
         disabled: bool(),
@@ -13,7 +17,7 @@ export class UIButton extends UIElement {
         ariaLabel: { type: String, attribute: "aria-label" },
     };
 
-    static styles = css`
+    static override styles: CSSResultGroup = css`
         :host {
             display: inline-block;
             vertical-align: middle;
@@ -425,7 +429,7 @@ export class UIButton extends UIElement {
             super.disconnectedCallback();
         }
 
-        protected override render() {
+        protected override render(): unknown {
             return html`
                 <button
                     class="variant-${this.variant} size-${this
@@ -454,8 +458,3 @@ export class UIButton extends UIElement {
         customElements.define(UI_TAG_NAMES.BUTTON, UIButton);
     }
 
-    declare global {
-        interface HTMLElementTagNameMap {
-            "ui-button": UIButton;
-        }
-    }

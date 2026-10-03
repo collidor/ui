@@ -1,4 +1,4 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Variant } from '../constants.ts'
 import { announceLive } from '../announcer.ts'
@@ -38,7 +38,7 @@ function accentValue(variant: string): string {
 }
 
 export class UIToast extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     variant: { type: String, reflect: true },
     title: { type: String, reflect: true },
     duration: { type: Number, reflect: true },
@@ -46,7 +46,7 @@ export class UIToast extends UIElement {
     icon: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: block;
       box-sizing: border-box;
@@ -157,7 +157,7 @@ export class UIToast extends UIElement {
     this.style.setProperty('--ui-toast-accent', accentValue(this.variant))
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const icon = this.icon || DEFAULT_ICONS[this.variant] || 'ℹ'
     const role = this.variant === 'danger' ? 'alert' : 'status'
     return html`
@@ -189,11 +189,11 @@ if (!customElements.get(UI_TAG_NAMES.TOAST)) {
 }
 
 export class UIToastContainer extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     placement: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       position: fixed;
       z-index: 11000;
@@ -269,7 +269,7 @@ export class UIToastContainer extends UIElement {
     return toast
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`<slot></slot>`
   }
 }
@@ -278,9 +278,3 @@ if (!customElements.get(UI_TAG_NAMES.TOAST_CONTAINER)) {
   customElements.define(UI_TAG_NAMES.TOAST_CONTAINER, UIToastContainer)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-toast': UIToast
-    'ui-toast-container': UIToastContainer
-  }
-}

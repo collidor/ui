@@ -1,9 +1,9 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Variant, type Size } from '../constants.ts'
 
 export class UIChip extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     variant: { type: String, reflect: true },
     size: { type: String, reflect: true },
@@ -14,7 +14,7 @@ export class UIChip extends UIElement {
     avatar: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-flex;
       align-items: center;
@@ -187,7 +187,7 @@ export class UIChip extends UIElement {
     this.#syncAria()
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const closeLabel = this.value ? `Remove ${this.value}` : 'Remove'
 
     return html`
@@ -215,11 +215,11 @@ if (!customElements.get(UI_TAG_NAMES.CHIP)) {
 }
 
 export class UIChipGroup extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     wrap: bool(),
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: flex;
       align-items: center;
@@ -243,7 +243,7 @@ export class UIChipGroup extends UIElement {
     this.setAttribute('role', 'group')
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`<slot></slot>`
   }
 }
@@ -252,9 +252,3 @@ if (!customElements.get(UI_TAG_NAMES.CHIP_GROUP)) {
   customElements.define(UI_TAG_NAMES.CHIP_GROUP, UIChipGroup)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-chip': UIChip
-    'ui-chip-group': UIChipGroup
-  }
-}

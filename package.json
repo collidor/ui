@@ -34,7 +34,9 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
-    "test": "vp test"
+    "test": "vp test",
+    "build:docs": "npm --prefix docs-site run build",
+    "dev:docs": "npm --prefix docs-site run dev"
   },
   "devDependencies": {
     "@types/node": "^24.13.4",

@@ -1,9 +1,9 @@
-import { html, css } from 'lit'
+import { html, css, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
 
 export class UISwitch extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     checked: bool(),
     disabled: bool(),
     size: { type: String, reflect: true },
@@ -13,7 +13,7 @@ export class UISwitch extends UIElement {
     ariaDescribedby: { type: String, attribute: 'aria-describedby', reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-flex;
       align-items: center;
@@ -236,7 +236,7 @@ export class UISwitch extends UIElement {
     }
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <div class="track size-${this.size} ${this.checked ? 'checked' : ''}" part="track">
         <div class="thumb" part="thumb"></div>
@@ -250,8 +250,3 @@ if (!customElements.get(UI_TAG_NAMES.SWITCH)) {
   customElements.define(UI_TAG_NAMES.SWITCH, UISwitch)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-switch': UISwitch
-  }
-}

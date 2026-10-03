@@ -5,7 +5,6 @@ import type {
     UIAccordionItem,
     UICard,
     UIDialog,
-    UIStatCard,
     UITable,
 } from "../../index.ts";
 import { mount, record } from "../harness.ts";
@@ -41,20 +40,6 @@ describe("header surfaces", () => {
 
         expect(card.collapsed).toBe(false);
         expect(toggles).toHaveLength(0);
-    });
-
-    it("keeps a stat card collapse on the same event", () => {
-        const card = mount(document.createElement(UI_TAG_NAMES.STAT_CARD) as UIStatCard);
-        card.title = "ATTACK";
-        card.collapsible = true;
-        card.headerSurface = "raised";
-        const toggles = record<{ collapsed: boolean }>(card, "ui-collapse-toggle");
-
-        card.toggleCollapse();
-
-        expect(card.collapsed).toBe(true);
-        expect(card.getAttribute("header-surface")).toBe("raised");
-        expect(toggles.map((event) => event.detail)).toEqual([{ collapsed: true }]);
     });
 
     it("collapses a table from the header bar without sorting", () => {

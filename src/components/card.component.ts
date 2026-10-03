@@ -1,17 +1,17 @@
-import { css, html, nothing } from "lit";
+import { css, html, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { bool } from "../base.element.ts";
 import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
 import { ifDefined } from "lit/directives/if-defined.js";
 
 export class UICard extends UIHeaderedElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         elevated: bool(),
         bordered: bool(),
     };
 
-    static styles = [
+    static override styles: CSSResultGroup = [
         UIHeaderedElement.styles,
         css`
             :host {
@@ -161,7 +161,7 @@ export class UICard extends UIHeaderedElement {
 
         #bodyId = `card-body-${Math.random().toString(36).slice(2, 8)}`;
 
-        protected override render() {
+        protected override render(): unknown {
             const hasFooter = !!this.querySelector(':scope > [slot="footer"]');
 
             return html`
@@ -208,8 +208,3 @@ export class UICard extends UIHeaderedElement {
         customElements.define(UI_TAG_NAMES.CARD, UICard);
     }
 
-    declare global {
-        interface HTMLElementTagNameMap {
-            "ui-card": UICard;
-        }
-    }

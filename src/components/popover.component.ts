@@ -1,4 +1,4 @@
-import { css, html, nothing, type PropertyValues } from "lit";
+import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { bool, UIElement } from "../base.element.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
 
@@ -21,7 +21,7 @@ export type PopoverPlacement =
 type PopoverAnchor = HTMLElement | { x: number; y: number };
 
 export class UIPopover extends UIElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         open: bool(),
         type: { type: String, reflect: true },
         placement: { type: String, reflect: true },
@@ -32,7 +32,7 @@ export class UIPopover extends UIElement {
         ariaLabelledby: { type: String, attribute: "aria-labelledby" },
     };
 
-    static styles = css`
+    static override styles: CSSResultGroup = css`
         :host {
             display: contents;
         }
@@ -331,7 +331,7 @@ export class UIPopover extends UIElement {
             }
         }
 
-        protected override render() {
+        protected override render(): unknown {
             return html`
                 <div
                     popover="${this.type}"
@@ -391,8 +391,3 @@ export class UIPopover extends UIElement {
         customElements.define(UI_TAG_NAMES.POPOVER, UIPopover);
     }
 
-    declare global {
-        interface HTMLElementTagNameMap {
-            "ui-popover": UIPopover;
-        }
-    }

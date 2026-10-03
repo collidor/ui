@@ -1,16 +1,16 @@
-import { html, css, type PropertyValues } from 'lit'
+import { html, css, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
 let tooltipIdCounter = 0
 
 export class UITooltip extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     content: { type: String, reflect: true },
     position: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-block;
       position: relative;
@@ -289,7 +289,7 @@ export class UITooltip extends UIElement {
     this.#syncTrigger()
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <slot @slotchange=${this.#syncTrigger}></slot>
       <div
@@ -313,8 +313,3 @@ if (!customElements.get(UI_TAG_NAMES.TOOLTIP)) {
   customElements.define(UI_TAG_NAMES.TOOLTIP, UITooltip)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-tooltip': UITooltip
-  }
-}

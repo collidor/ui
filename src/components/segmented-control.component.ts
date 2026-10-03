@@ -1,15 +1,15 @@
-import { html, css, nothing, type PropertyValues } from 'lit'
+import { html, css, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { styleMap } from 'lit/directives/style-map.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
 
 export class UISegmentItem extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     disabled: bool(),
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: flex;
       align-items: center;
@@ -57,7 +57,7 @@ export class UISegmentItem extends UIElement {
     }
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`<slot></slot>`
   }
 }
@@ -67,7 +67,7 @@ if (!customElements.get(UI_TAG_NAMES.SEGMENT_ITEM)) {
 }
 
 export class UISegmentedControl extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     size: { type: String, reflect: true },
     fullWidth: bool('full-width'),
@@ -75,7 +75,7 @@ export class UISegmentedControl extends UIElement {
     ariaLabelledby: { type: String, attribute: 'aria-labelledby' },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-flex;
       box-sizing: border-box;
@@ -249,7 +249,7 @@ export class UISegmentedControl extends UIElement {
     this.#updateActiveItem()
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <div
         class="segment-track"
@@ -269,9 +269,3 @@ if (!customElements.get(UI_TAG_NAMES.SEGMENTED_CONTROL)) {
   customElements.define(UI_TAG_NAMES.SEGMENTED_CONTROL, UISegmentedControl)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-segment-item': UISegmentItem
-    'ui-segmented-control': UISegmentedControl
-  }
-}

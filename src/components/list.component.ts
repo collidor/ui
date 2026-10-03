@@ -1,4 +1,4 @@
-import { css, html, nothing, type PropertyValues } from "lit";
+import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { repeat } from "lit/directives/repeat.js";
 import { bool } from "../base.element.ts";
 import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
@@ -58,7 +58,7 @@ const META_KEYS = new Set([
 
 export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
     extends UIHeaderedElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         layout: { type: String, reflect: true },
         columns: { type: Number, reflect: false },
@@ -108,7 +108,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
         renderItem: { attribute: false },
     };
 
-    static styles = [
+    static override styles: CSSResultGroup = [
         UIHeaderedElement.styles,
         css`
             :host {
@@ -1318,7 +1318,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     `;
                 }
 
-                protected override render() {
+                protected override render(): unknown {
                     const paginationResult = calculatePagination(
                         this.#data,
                         this.page,
@@ -1414,8 +1414,3 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 customElements.define(UI_TAG_NAMES.LIST, UIList);
             }
 
-            declare global {
-                interface HTMLElementTagNameMap {
-                    "ui-list": UIList;
-                }
-            }

@@ -1,10 +1,10 @@
-import { html, css, nothing, type PropertyValues } from 'lit'
+import { html, css, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { bool } from '../base.element.ts'
 import { UIHeaderedElement, headerToggleIcon } from '../headerSurface.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
 export class UIDialog extends UIHeaderedElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     ...UIHeaderedElement.properties,
     open: bool(),
     title: { type: String, reflect: true },
@@ -12,7 +12,7 @@ export class UIDialog extends UIHeaderedElement {
     ariaLabelledby: { type: String, attribute: 'aria-labelledby' },
   }
 
-  static styles = [UIHeaderedElement.styles, css`
+  static override styles: CSSResultGroup = [UIHeaderedElement.styles, css`
     :host {
       display: contents;
       font-family: var(--ui-font-family, ui-sans-serif, system-ui);
@@ -183,7 +183,7 @@ export class UIDialog extends UIHeaderedElement {
     this.emit('ui-close')
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <dialog
         part="dialog"
@@ -270,8 +270,3 @@ if (!customElements.get(UI_TAG_NAMES.DIALOG)) {
   customElements.define(UI_TAG_NAMES.DIALOG, UIDialog)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-dialog': UIDialog
-  }
-}

@@ -1,4 +1,4 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Variant } from '../constants.ts'
 import { announceLive } from '../announcer.ts'
@@ -30,14 +30,14 @@ function accentValue(variant: string): string {
 }
 
 export class UIAlert extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     variant: { type: String, reflect: true },
     title: { type: String, reflect: true },
     closable: bool(),
     icon: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: flex;
       flex-direction: column;
@@ -133,7 +133,7 @@ export class UIAlert extends UIElement {
     this.style.setProperty('--ui-alert-accent', accentValue(this.variant))
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const icon = this.icon || DEFAULT_ICONS[this.variant] || 'ℹ'
     const role = this.variant === 'danger' ? 'alert' : 'status'
     return html`
@@ -164,8 +164,3 @@ if (!customElements.get(UI_TAG_NAMES.ALERT)) {
   customElements.define(UI_TAG_NAMES.ALERT, UIAlert)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-alert': UIAlert
-  }
-}

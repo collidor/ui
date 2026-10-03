@@ -1,10 +1,10 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { live } from 'lit/directives/live.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
 
 export class UISelect extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     disabled: bool(),
     size: { type: String, reflect: true },
@@ -17,7 +17,7 @@ export class UISelect extends UIElement {
     invalid: bool('invalid'),
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -400,7 +400,7 @@ export class UISelect extends UIElement {
     this.#syncOptions()
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const effectiveLabel = this.ariaLabel || this.label || nothing
 
     return html`
@@ -429,8 +429,3 @@ if (!customElements.get(UI_TAG_NAMES.SELECT)) {
   customElements.define(UI_TAG_NAMES.SELECT, UISelect)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-select': UISelect
-  }
-}

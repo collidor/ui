@@ -25,7 +25,6 @@ import {
     UISegmentItem,
     UISelect,
     UISlider,
-    UIStatCard,
     UIStructForm,
     UISwitch,
     UITab,
@@ -75,7 +74,6 @@ describe("UI Web Components Library", () => {
             expect(customElements.get(UI_TAG_NAMES.DIALOG)).toBe(UIDialog);
             expect(customElements.get(UI_TAG_NAMES.TABLE)).toBe(UITable);
             expect(customElements.get(UI_TAG_NAMES.LIST)).toBe(UIList);
-            expect(customElements.get(UI_TAG_NAMES.STAT_CARD)).toBe(UIStatCard);
             expect(customElements.get(UI_TAG_NAMES.STRUCT_FORM)).toBe(
                 UIStructForm,
             );
@@ -1065,34 +1063,6 @@ describe("UI Web Components Library", () => {
             expect(paged.items.length).toBe(2);
             expect(paged.startItem).toBe(1);
             expect(paged.endItem).toBe(2);
-        });
-    });
-
-    describe("UIStatCard (<ui-stat-card>)", () => {
-        it("should render title, subtitle, and support collapse toggling", () => {
-            const card = document.createElement(
-                UI_TAG_NAMES.STAT_CARD,
-            ) as UIStatCard;
-            card.title = "ATTACK";
-            card.subtitle = "(Click to Inspect)";
-            card.collapsible = true;
-            document.body.appendChild(card);
-
-            const titleEl = card.shadowRoot?.querySelector(".stat-title");
-            const subtitleEl = card.shadowRoot?.querySelector(".stat-subtitle");
-            expect(titleEl?.textContent).toBe("ATTACK");
-            expect(subtitleEl?.textContent).toBe("(Click to Inspect)");
-
-            expect(card.collapsed).toBe(false);
-            card.toggleCollapse();
-            expect(card.collapsed).toBe(true);
-
-            const body = card.shadowRoot?.querySelector(
-                ".stat-body",
-            ) as HTMLElement;
-            expect(body?.style.display).toBe("none");
-
-            document.body.removeChild(card);
         });
     });
 

@@ -1,10 +1,10 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { headerSurfaceProperty, headerSurfaceStyle } from '../headerSurface.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
 export class UIAccordionItem extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     headerSurface: headerSurfaceProperty,
     title: { type: String, reflect: true },
     open: bool(),
@@ -12,7 +12,7 @@ export class UIAccordionItem extends UIElement {
     icon: { type: String, reflect: true },
   }
 
-  static styles = [headerSurfaceStyle, css`
+  static override styles: CSSResultGroup = [headerSurfaceStyle, css`
     :host {
       display: block;
       box-sizing: border-box;
@@ -134,7 +134,7 @@ export class UIAccordionItem extends UIElement {
     this.emit('ui-accordion-change', { item: this, open: this.open })
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <h3 class="accordion-heading" part="heading">
         <button
@@ -172,11 +172,11 @@ if (!customElements.get(UI_TAG_NAMES.ACCORDION_ITEM)) {
 }
 
 export class UIAccordion extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     multiple: bool(),
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: block;
       box-sizing: border-box;
@@ -241,7 +241,7 @@ export class UIAccordion extends UIElement {
     super.disconnectedCallback()
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`<slot></slot>`
   }
 }
@@ -250,9 +250,3 @@ if (!customElements.get(UI_TAG_NAMES.ACCORDION)) {
   customElements.define(UI_TAG_NAMES.ACCORDION, UIAccordion)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-accordion-item': UIAccordionItem
-    'ui-accordion': UIAccordion
-  }
-}

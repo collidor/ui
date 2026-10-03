@@ -194,24 +194,6 @@
   --ui-card-footer-border: 1px solid oklch(0.28 0.025 260);
   --ui-card-shadow: var(--ui-shadow-md);
 
-  /* Stat Card & Item Hooks */
-  --ui-stat-card-bg: oklch(0.18 0.025 260);
-  --ui-stat-card-color: oklch(0.96 0.005 260);
-  --ui-stat-card-border: 1px solid oklch(0.28 0.025 260);
-  --ui-stat-card-radius: var(--ui-space-xs, 0.618em);
-  --ui-stat-header-bg: oklch(0.22 0.025 260);
-  --ui-stat-header-color: oklch(0.96 0.005 260);
-  --ui-stat-title-color: oklch(0.96 0.005 260);
-  --ui-stat-subtitle-color: oklch(0.75 0.02 260);
-  --ui-stat-item-bg: oklch(0.16 0.02 260);
-  --ui-stat-item-color: oklch(0.96 0.005 260);
-  --ui-stat-item-hover-bg: oklch(0.24 0.03 260);
-  --ui-stat-item-hover-border: oklch(0.35 0.03 260);
-  --ui-stat-item-hover-color: #ffffff;
-  --ui-stat-modifier-color: oklch(0.68 0.18 160);
-  --ui-stat-cell-bg: oklch(0.16 0.02 260);
-  --ui-stat-cell-highlight-bg: oklch(0.62 0.2 260 / 0.2);
-
   /* Input Hooks */
   --ui-input-bg: oklch(0.12 0.02 260);
   --ui-input-border: 1px solid oklch(0.28 0.025 260);

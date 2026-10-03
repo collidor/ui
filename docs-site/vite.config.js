@@ -6,6 +6,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const uiSrc = resolve(__dirname, '../src')
 
 export default defineConfig({
+  base: './',
   root: '.',
   resolve: {
     alias: {

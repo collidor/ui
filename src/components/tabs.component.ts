@@ -1,16 +1,16 @@
-import { html, css, type PropertyValues } from 'lit'
+import { html, css, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
 export class UITab extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     active: bool(),
     disabled: bool(),
     controls: { type: String, attribute: 'aria-controls', reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-flex;
       align-items: center;
@@ -118,17 +118,17 @@ export class UITab extends UIElement {
     }
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`<slot></slot>`
   }
 }
 
 export class UITabs extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: flex;
       align-items: center;
@@ -219,7 +219,7 @@ export class UITabs extends UIElement {
     })
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`<slot @slotchange=${this.#onSlotChange}></slot>`
   }
 }
@@ -231,9 +231,3 @@ if (!customElements.get(UI_TAG_NAMES.TABS)) {
   customElements.define(UI_TAG_NAMES.TABS, UITabs)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-tab': UITab
-    'ui-tabs': UITabs
-  }
-}

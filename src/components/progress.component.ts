@@ -1,11 +1,11 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { styleMap } from 'lit/directives/style-map.js'
 import { bool } from '../base.element.ts'
 import { UIHeaderedElement, headerToggleIcon } from '../headerSurface.ts'
 import { UI_TAG_NAMES, type Variant, type Size } from '../constants.ts'
 
 export class UIProgress extends UIHeaderedElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     ...UIHeaderedElement.properties,
     value: { type: Number, reflect: true },
     max: { type: Number, reflect: true },
@@ -22,7 +22,7 @@ export class UIProgress extends UIHeaderedElement {
     valueText: { type: String, attribute: 'value-text', reflect: true },
   }
 
-  static styles = [UIHeaderedElement.styles, css`
+  static override styles: CSSResultGroup = [UIHeaderedElement.styles, css`
     :host {
       display: flex;
       flex-direction: column;
@@ -155,7 +155,7 @@ export class UIProgress extends UIHeaderedElement {
     )
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const min = this.min
     const max = Math.max(min + 1, this.max)
     const val = Math.min(max, Math.max(min, this.value))
@@ -215,8 +215,3 @@ if (!customElements.get(UI_TAG_NAMES.PROGRESS)) {
   customElements.define(UI_TAG_NAMES.PROGRESS, UIProgress)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-progress': UIProgress
-  }
-}

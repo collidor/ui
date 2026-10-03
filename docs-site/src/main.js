@@ -1267,7 +1267,7 @@ const SECTIONS = [
             </div>
           `,
         }),
-        codeBlock(`<!-- Apply header-surface to any UIHeaderedElement: ui-card, ui-dialog, ui-drawer, ui-table, ui-list, ui-stat-card -->
+        codeBlock(`<!-- Apply header-surface to any UIHeaderedElement: ui-card, ui-dialog, ui-drawer, ui-table, ui-list, ui-progress -->
 <ui-card header-surface="flat">
   <span slot="header">Flat Header</span>
   Card body…
@@ -1300,7 +1300,6 @@ const SECTIONS = [
           ['ui-drawer', 'Component', "'flat'", 'Drawer slide-out top header'],
           ['ui-list', 'Component', "'flat'", 'List collection title header'],
           ['ui-table', 'Component', "'flat'", 'Data table title header'],
-          ['ui-stat-card', 'Component', "'flat'", 'Metric stat card header'],
           ['ui-progress', 'Component', "'flat'", 'Progress header surface'],
         ]),
       ]
@@ -1792,122 +1791,6 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
           ['size', 'string', "'1em'", 'CSS dimension for width and height'],
           ['label', 'string', "''", 'Accessible label for screen readers'],
         ]),
-      ]
-    },
-  },
-
-  // ── Stat Card ─────────────────────────────────────────────────────────────
-  {
-    id: 'stat-card',
-    title: 'Stat Card',
-    tag: 'ui-stat-card',
-    group: 'Display',
-    description:
-      'Dashboard metric card with title, subtitle, header surface accents, and collapsible details body.',
-    build() {
-      return [
-        subTitle('KPI Cards'),
-        demoBlock({
-          label: 'Metric overview cards',
-          html: `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
-              <ui-stat-card title="System Throughput" subtitle="Last 24 hours" variant="primary">
-                <div style="padding: 12px 0;">
-                  <div style="font-size: 2rem; font-weight: 700; font-family: var(--ui-font-mono);">1.42 GB/s</div>
-                  <div style="font-size: 0.75rem; color: var(--ui-color-success); margin-top: 4px;">▲ +18.4% from yesterday</div>
-                </div>
-              </ui-stat-card>
-              <ui-stat-card title="Active Sessions" subtitle="Connected clients" variant="accent">
-                <div style="padding: 12px 0;">
-                  <div style="font-size: 2rem; font-weight: 700; font-family: var(--ui-font-mono);">8,941</div>
-                  <div style="font-size: 0.75rem; color: var(--ui-color-text-muted); margin-top: 4px;">Peak: 10,240 nodes</div>
-                </div>
-              </ui-stat-card>
-            </div>
-          `,
-        }),
-        codeBlock(`<ui-stat-card title="System Throughput" subtitle="Last 24 hours" variant="primary">
-  <div class="kpi-value">1.42 GB/s</div>
-  <div class="kpi-trend">+18.4%</div>
-</ui-stat-card>`),
-
-        subTitle('Properties'),
-        propsTable([
-          ['title', 'string', "''", 'Card header title'],
-          ['subtitle', 'string', "''", 'Secondary descriptive subtitle'],
-          ['variant', 'Variant', "'primary'", 'Header accent color variant'],
-          ['collapsible', 'boolean', 'false', 'Allows collapsing the card body'],
-          ['bordered', 'boolean', 'true', 'Displays outer border'],
-          ['elevated', 'boolean', 'false', 'Adds box-shadow elevation'],
-        ]),
-      ]
-    },
-  },
-
-  // ── Stat Primitives ───────────────────────────────────────────────────────
-  {
-    id: 'stat-primitives',
-    title: 'Stat Primitives',
-    tag: '.ui-stat-*',
-    group: 'Display',
-    description:
-      'Zero-JS pure CSS metric grids, stacks, and data cells for ultra-fast, lightweight analytics dashboards.',
-    build() {
-      return [
-        subTitle('Stat Grid & Cells (.ui-stat-grid & .ui-stat-cell)'),
-        demoBlock({
-          label: 'Divided Stat Grid with Metric Cells',
-          html: `
-            <div class="ui-stat-grid ui-stat-grid--divided" style="max-width: 480px;">
-              <div class="ui-stat-cell">
-                <span class="ui-stat-cell__label">CPU Usage</span>
-                <span class="ui-stat-cell__value">42%</span>
-                <span class="ui-stat-cell__subtext">8 Cores</span>
-              </div>
-              <div class="ui-stat-cell ui-stat-cell--highlight">
-                <span class="ui-stat-cell__label">RAM</span>
-                <span class="ui-stat-cell__value">12.8 <span class="ui-stat-cell__modifier">GB</span></span>
-                <span class="ui-stat-cell__subtext">of 16 GB</span>
-              </div>
-              <div class="ui-stat-cell">
-                <span class="ui-stat-cell__label">Latency</span>
-                <span class="ui-stat-cell__value">14 <span class="ui-stat-cell__modifier">ms</span></span>
-                <span class="ui-stat-cell__subtext">p99</span>
-              </div>
-            </div>
-          `,
-        }),
-        codeBlock(`<div class="ui-stat-grid ui-stat-grid--divided">
-  <div class="ui-stat-cell">
-    <span class="ui-stat-cell__label">CPU Usage</span>
-    <span class="ui-stat-cell__value">42%</span>
-  </div>
-  <div class="ui-stat-cell ui-stat-cell--highlight">
-    <span class="ui-stat-cell__label">RAM</span>
-    <span class="ui-stat-cell__value">12.8 GB</span>
-  </div>
-</div>`),
-
-        subTitle('Stat Stack & Row Items (.ui-stat-stack & .ui-stat-item)'),
-        demoBlock({
-          label: 'Joined vertical stack of clickable stat items',
-          html: `
-            <div class="ui-stat-stack ui-stat-stack--joined" style="max-width: 380px;">
-              <div class="ui-stat-item ui-stat-item--clickable">
-                <span class="ui-stat-item__label">HTTP Inbound Requests</span>
-                <span class="ui-stat-item__value">48.2k / min</span>
-              </div>
-              <div class="ui-stat-item ui-stat-item--clickable ui-stat-item--active">
-                <span class="ui-stat-item__label">Database Queries</span>
-                <span class="ui-stat-item__value">12.4k / min</span>
-              </div>
-              <div class="ui-stat-item ui-stat-item--clickable">
-                <span class="ui-stat-item__label">Cache Hit Ratio</span>
-                <span class="ui-stat-item__value">98.6%</span>
-              </div>
-            </div>
-          `,
-        }),
       ]
     },
   },

@@ -1,4 +1,4 @@
-import { html, css, render as renderTemplate } from 'lit'
+import { html, css, render as renderTemplate, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { styleMap } from 'lit/directives/style-map.js'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { UIElement } from '../base.element.ts'
@@ -44,14 +44,14 @@ function applyHostSize(host: HTMLElement, size: string): void {
 }
 
 export class UIIcon extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     name: { type: String, reflect: true },
     size: { type: String, reflect: true },
     label: { type: String, reflect: true },
     ariaLabel: { type: String, attribute: 'aria-label' },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-flex;
       align-items: center;
@@ -100,7 +100,7 @@ export class UIIcon extends UIElement {
     }
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const path = ICONS[this.name]
     const svgPath = typeof path === 'string' ? path : ''
     // The path markup is from ICONS, not the name. Parsing the whole <svg> keeps the path in the SVG namespace.
@@ -114,8 +114,3 @@ if (!customElements.get(UI_TAG_NAMES.ICON)) {
   customElements.define(UI_TAG_NAMES.ICON, UIIcon)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-icon': UIIcon
-  }
-}

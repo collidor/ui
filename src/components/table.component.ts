@@ -1,4 +1,4 @@
-import { css, html, nothing, type PropertyValues } from "lit";
+import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { repeat } from "lit/directives/repeat.js";
 import { bool } from "../base.element.ts";
 import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
@@ -34,7 +34,7 @@ function jsonArray(value: string | null): unknown {
 export class UITable<
     T extends Record<string, unknown> = Record<string, unknown>,
 > extends UIHeaderedElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         size: { type: String, reflect: true },
         striped: bool(),
@@ -100,7 +100,7 @@ export class UITable<
         pageSizeOptions: { attribute: false },
     };
 
-    static styles = [
+    static override styles: CSSResultGroup = [
         UIHeaderedElement.styles,
         css`
             :host {
@@ -2617,7 +2617,7 @@ export class UITable<
                                                         `;
                                                     }
 
-                                                    protected override render() {
+                                                    protected override render(): unknown {
                                                         const allCols = this
                                                             .#allColumns();
                                                         const activeCols =
@@ -2845,8 +2845,3 @@ export class UITable<
                                                     );
                                                 }
 
-                                                declare global {
-                                                    interface HTMLElementTagNameMap {
-                                                        "ui-table": UITable;
-                                                    }
-                                                }

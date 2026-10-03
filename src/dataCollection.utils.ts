@@ -231,7 +231,10 @@ export function renderPaginationHtml(options: {
  * also originated directly on the backdrop (preventing accidental dismissals when
  * dragging text, inputs, or scrollbars from inside the modal card).
  */
-export function createBackdropDismissHandler(onClose: () => void) {
+export function createBackdropDismissHandler(onClose: () => void): {
+  onPointerDown: (e: PointerEvent | MouseEvent) => void
+  onClick: (e: MouseEvent) => void
+} {
   let isBackdropDown = false
 
   const onPointerDown = (e: PointerEvent | MouseEvent) => {

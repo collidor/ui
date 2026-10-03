@@ -29,7 +29,6 @@ export const UI_TAG_NAMES = {
   TABLE: 'ui-table',
   PAGINATION: 'ui-pagination',
   LIST: 'ui-list',
-  STAT_CARD: 'ui-stat-card',
   STRUCT_FORM: 'ui-struct-form',
   PROGRESS: 'ui-progress',
   DRAWER: 'ui-drawer',

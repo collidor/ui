@@ -1,4 +1,4 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
@@ -37,7 +37,7 @@ export interface StructFormSubmitEventDetail {
 }
 
 export class UIStructForm extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     submitLabel: { type: String, attribute: 'submit-label', reflect: true },
     bordered: bool(),
     dense: bool(),
@@ -48,7 +48,7 @@ export class UIStructForm extends UIElement {
     ariaLabel: { type: String, attribute: 'aria-label' },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: block;
       box-sizing: border-box;
@@ -353,7 +353,7 @@ export class UIStructForm extends UIElement {
     </ui-field>`
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const layout = this.layout || 'stacked'
     return html`
       <form
@@ -391,8 +391,3 @@ if (!customElements.get(UI_TAG_NAMES.STRUCT_FORM)) {
   customElements.define(UI_TAG_NAMES.STRUCT_FORM, UIStructForm)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-struct-form': UIStructForm
-  }
-}

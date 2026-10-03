@@ -1,11 +1,11 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { live } from 'lit/directives/live.js'
 import { styleMap } from 'lit/directives/style-map.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
 export class UISlider extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: Number, reflect: true },
     min: { type: Number, reflect: true },
     max: { type: Number, reflect: true },
@@ -18,7 +18,7 @@ export class UISlider extends UIElement {
     ariaDescribedby: { type: String, attribute: 'aria-describedby', reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -162,7 +162,7 @@ export class UISlider extends UIElement {
     this.emit('ui-change', { value: this.value })
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const effectiveLabel = this.ariaLabel || this.label || nothing
 
     return html`
@@ -201,8 +201,3 @@ if (!customElements.get(UI_TAG_NAMES.SLIDER)) {
   customElements.define(UI_TAG_NAMES.SLIDER, UISlider)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-slider': UISlider
-  }
-}

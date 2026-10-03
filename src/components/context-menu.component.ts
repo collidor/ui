@@ -1,17 +1,21 @@
-import { html, css, type PropertyValues } from 'lit'
+import { html,
+  css,
+  type CSSResultGroup,
+  type PropertyDeclarations,
+  type PropertyValues, } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 import { UIMenuItem } from './menu.component.ts'
 
 export class UIContextMenu extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     target: { type: String, reflect: true },
     disabled: bool(),
     open: bool(),
     ariaLabel: { type: String, attribute: 'aria-label' },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: contents;
     }
@@ -21,12 +25,15 @@ export class UIContextMenu extends UIElement {
       padding: 4px;
       min-width: 180px;
       max-width: 320px;
-      background: var(--ui-card-bg, oklch(0.96 0.002 260));
-      color: var(--ui-color-text, oklch(0.16 0.02 260));
-      border: 1px solid var(--ui-color-border, oklch(0.74 0.012 260));
+      background: var(
+        --ui-card-bg,
+        var(--ui-color-surface-elevated, oklch(0.22 0.025 260))
+      );
+      color: var(--ui-color-text, oklch(0.96 0.01 260));
+      border: 1px solid var(--ui-color-border, oklch(0.32 0.03 260));
       border-radius: var(--ui-radius-sm, 0.236em);
-      box-shadow: var(--ui-shadow-lg, 0 20px 40px -8px rgba(0, 0, 0, 0.16));
-      font-family: var(--ui-font-family, -apple-system, BlinkMacSystemFont, 'Inter', sans-serif);
+      box-shadow: var(--ui-shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.5));
+      font-family: var(--ui-font-family, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Inter', sans-serif);
       box-sizing: border-box;
       z-index: 10000;
 
@@ -209,9 +216,12 @@ export class UIContextMenu extends UIElement {
     if (this.disabled) return
     if (!this.target) return
     const path = event.composedPath()
-    const root = this.getRootNode() as Document | ShadowRoot
-    const targetEl = root?.querySelector?.<HTMLElement>(this.target) ?? document.querySelector<HTMLElement>(this.target)
-    if (targetEl && (path.includes(targetEl) || event.target === targetEl)) {
+    const matched = path.find(
+      (el): el is HTMLElement =>
+        el instanceof HTMLElement && typeof el.matches === 'function' && el.matches(this.target)
+    )
+    if (matched) {
+      this.#currentTargetEl = matched
       this.#onContextMenu(event)
     }
   }
@@ -265,7 +275,7 @@ export class UIContextMenu extends UIElement {
     }
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <div
         popover="manual"
@@ -374,7 +384,12 @@ export class UIContextMenu extends UIElement {
 
 function menuItemFromEvent(event: Event): UIMenuItem | null {
   for (const node of event.composedPath()) {
-    if (node instanceof UIMenuItem) return node
+    if (
+      node instanceof HTMLElement &&
+      (node instanceof UIMenuItem || node.tagName?.toLowerCase() === UI_TAG_NAMES.MENU_ITEM)
+    ) {
+      return node as UIMenuItem
+    }
   }
   return null
 }
@@ -383,8 +398,3 @@ if (!customElements.get(UI_TAG_NAMES.CONTEXT_MENU)) {
   customElements.define(UI_TAG_NAMES.CONTEXT_MENU, UIContextMenu)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-context-menu': UIContextMenu
-  }
-}

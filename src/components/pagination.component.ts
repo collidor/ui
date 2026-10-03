@@ -1,4 +1,4 @@
-import { html, css, nothing, type PropertyValues } from 'lit'
+import { html, css, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { ifDefined } from 'lit/directives/if-defined.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
@@ -31,7 +31,7 @@ export interface PageSizeChangeEventDetail {
  *   - Space (and Enter) activates the focused button
  */
 export class UIPagination extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     page: { type: Number, reflect: true },
     pageSize: { type: Number, attribute: 'page-size', reflect: true },
     total: { type: Number, reflect: true },
@@ -72,7 +72,7 @@ export class UIPagination extends UIElement {
     ariaLabel: { type: String, attribute: 'aria-label' },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: block;
       box-sizing: border-box;
@@ -495,7 +495,7 @@ export class UIPagination extends UIElement {
     }
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const { page, totalPages, total, pageSize } = this
     const startItem = total === 0 ? 0 : (page - 1) * pageSize + 1
     const endItem = Math.min(page * pageSize, total)

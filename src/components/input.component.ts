@@ -1,10 +1,10 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { live } from 'lit/directives/live.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
 
 export class UIInput extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     type: { type: String, reflect: true },
     placeholder: { type: String, reflect: true },
@@ -20,7 +20,7 @@ export class UIInput extends UIElement {
     invalid: bool('invalid'),
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -186,7 +186,7 @@ export class UIInput extends UIElement {
     this.emit('ui-change', { value: '' })
   }
 
-  protected override render() {
+  protected override render(): unknown {
     const showClear = this.clearable && Boolean(this.value) && !this.disabled && !this.readonly
     const effectiveLabel = this.ariaLabel || this.label || nothing
 
@@ -228,8 +228,3 @@ if (!customElements.get(UI_TAG_NAMES.INPUT)) {
   customElements.define(UI_TAG_NAMES.INPUT, UIInput)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-input': UIInput
-  }
-}

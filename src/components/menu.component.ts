@@ -1,9 +1,9 @@
-import { css, html, nothing, type PropertyValues } from "lit";
+import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { bool, UIElement } from "../base.element.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
 
 export class UIMenuDivider extends UIElement {
-    static styles = css`
+    static override styles: CSSResultGroup = css`
         :host {
             display: block;
             height: 1px;
@@ -17,7 +17,7 @@ export class UIMenuDivider extends UIElement {
         this.setAttribute("role", "separator");
     }
 
-    protected override render() {
+    protected override render(): unknown {
         return nothing;
     }
 }
@@ -27,7 +27,7 @@ if (!customElements.get(UI_TAG_NAMES.MENU_DIVIDER)) {
 }
 
 export class UIMenuItem extends UIElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         value: { type: String, reflect: true },
         disabled: bool(),
         icon: { type: String, reflect: true },
@@ -35,7 +35,7 @@ export class UIMenuItem extends UIElement {
         danger: bool(),
     };
 
-    static styles = css`
+    static override styles: CSSResultGroup = css`
         :host {
             display: flex;
             align-items: center;
@@ -132,7 +132,7 @@ export class UIMenuItem extends UIElement {
         this.#syncAria();
     }
 
-    protected override render() {
+    protected override render(): unknown {
         return html`
             ${this.icon
                 ? html`
@@ -155,13 +155,13 @@ if (!customElements.get(UI_TAG_NAMES.MENU_ITEM)) {
 }
 
 export class UIMenu extends UIElement {
-    static properties = {
+    static override properties: PropertyDeclarations = {
         open: bool(),
         trigger: { type: String, reflect: true },
         dropdown: bool(),
     };
 
-    static styles = css`
+    static override styles: CSSResultGroup = css`
         :host {
             display: inline-block;
             position: relative;
@@ -381,7 +381,7 @@ export class UIMenu extends UIElement {
         }
     }
 
-    protected override render() {
+    protected override render(): unknown {
         if (this.isDropdown) {
             return html`
                 <div
@@ -464,10 +464,3 @@ if (!customElements.get(UI_TAG_NAMES.MENU)) {
     customElements.define(UI_TAG_NAMES.MENU, UIMenu);
 }
 
-declare global {
-    interface HTMLElementTagNameMap {
-        "ui-menu-divider": UIMenuDivider;
-        "ui-menu-item": UIMenuItem;
-        "ui-menu": UIMenu;
-    }
-}

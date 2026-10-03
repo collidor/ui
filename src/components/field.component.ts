@@ -1,9 +1,9 @@
-import { html, css, nothing } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
 
 export class UIField extends UIElement {
-  static properties = {
+  static override properties: PropertyDeclarations = {
     label: { type: String, reflect: true },
     helper: { type: String, reflect: true },
     error: { type: String, reflect: true },
@@ -11,7 +11,7 @@ export class UIField extends UIElement {
     orientation: { type: String, reflect: true },
   }
 
-  static styles = css`
+  static override styles: CSSResultGroup = css`
     :host {
       display: block;
       margin-block-end: var(--ui-space-xs, 0.618em);
@@ -146,7 +146,7 @@ export class UIField extends UIElement {
     this.#syncControl()
   }
 
-  protected override render() {
+  protected override render(): unknown {
     return html`
       <div class="field-container orientation-${this.orientation}" part="container">
         ${this.label
@@ -172,8 +172,3 @@ if (!customElements.get(UI_TAG_NAMES.FIELD)) {
   customElements.define(UI_TAG_NAMES.FIELD, UIField)
 }
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'ui-field': UIField
-  }
-}
