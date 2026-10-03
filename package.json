@@ -4,7 +4,8 @@
   "description": "High-performance Web Component UI library with Golden Ratio relative spacing and OKLCH derived colors",
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/__tests__"
   ],
   "type": "module",
   "main": "./dist/index.cjs",
@@ -20,11 +21,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/collidor/ui.git"
+    "url": "https://github.com/collidor/ui.git"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "author": "Alykam Burdzaki <alykam@gmail.com> (https://alykam.com)",
   "license": "MIT",
@@ -35,11 +35,17 @@
     "dev": "vp dev",
     "build": "vp build",
     "test": "vp test",
+    "release": "semantic-release",
+    "sync:jsr": "deno run --allow-read --allow-write ./sync.ts",
     "build:docs": "npm --prefix docs-site run build",
     "dev:docs": "npm --prefix docs-site run dev"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/node": "^24.13.4",
+    "semantic-release": "^24.2.3",
     "typescript": "~7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",

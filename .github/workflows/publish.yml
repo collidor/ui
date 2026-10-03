@@ -1,0 +1,68 @@
+name: Release
+
+on:
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: write
+    id-token: write
+    pull-requests: write
+
+jobs:
+    release:
+        name: Release
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Deno
+              uses: denoland/setup-deno@v2
+              with:
+                  deno-version: v2.x
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: 'pnpm'
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Run Tests
+              run: pnpm test
+
+            - name: Build
+              run: pnpm run build
+
+            - name: Semantic Release
+              run: npx semantic-release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NPM_TOKEN: "00000000-0000-0000-0000-000000000000"
+
+            - name: Publish to NPM
+              run: |
+                  if [ -f .release_flag ]; then
+                    npm publish --provenance --access public
+                  else
+                    echo "No release flag found, skipping publish."
+                  fi
+
+            - name: Publish to JSR
+              run: |
+                  if [ -f .release_flag ]; then
+                    npx jsr publish --allow-slow-types --allow-dirty
+                  else
+                    echo "No release flag found, skipping JSR publish."
+                  fi
