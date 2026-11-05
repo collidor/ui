@@ -52,6 +52,7 @@ jobs:
                   NPM_TOKEN: "00000000-0000-0000-0000-000000000000"
 
             - name: Publish to NPM
+              continue-on-error: true
               run: |
                   if [ -f .release_flag ]; then
                     npm publish --provenance --access public
