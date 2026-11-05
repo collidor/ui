@@ -34,7 +34,7 @@
     "scripts": {
         "dev": "vp dev",
         "build": "vp build",
-        "test": "vp test",
+        "test": "vp test run",
         "release": "semantic-release",
         "sync:jsr": "deno run --allow-read --allow-write ./sync.ts",
         "build:docs": "npm --prefix docs-site run build",
@@ -44,7 +44,9 @@
         "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/exec": "^6.0.3",
         "@semantic-release/git": "^10.0.1",
+        "@types/jsdom": "^30.0.0",
         "@types/node": "^24.13.4",
+        "jsdom": "^30.1.3",
         "semantic-release": "^24.2.3",
         "typescript": "~7.0.2",
         "vite": "catalog:",
