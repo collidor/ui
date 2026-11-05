@@ -55,15 +55,22 @@ jobs:
               continue-on-error: true
               run: |
                   if [ -f .release_flag ]; then
-                    npm publish --provenance --access public
+                    npm_out=$(npm publish --provenance --access public 2>&1) || {
+                      echo "::error title=NPM_PUBLISH_ERROR::$(echo "$npm_out" | tr '\n' ' ')"
+                      exit 1
+                    }
                   else
                     echo "No release flag found, skipping publish."
                   fi
 
             - name: Publish to JSR
+              continue-on-error: true
               run: |
                   if [ -f .release_flag ]; then
-                    deno publish --allow-slow-types --allow-dirty
+                    jsr_out=$(deno publish --allow-slow-types --allow-dirty 2>&1) || {
+                      echo "::error title=JSR_PUBLISH_ERROR::$(echo "$jsr_out" | tr '\n' ' ')"
+                      exit 1
+                    }
                   else
                     echo "No release flag found, skipping JSR publish."
                   fi
