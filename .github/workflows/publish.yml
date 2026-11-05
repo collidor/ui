@@ -63,7 +63,7 @@ jobs:
             - name: Publish to JSR
               run: |
                   if [ -f .release_flag ]; then
-                    npx jsr publish --allow-slow-types --allow-dirty
+                    deno publish --allow-slow-types --allow-dirty
                   else
                     echo "No release flag found, skipping JSR publish."
                   fi

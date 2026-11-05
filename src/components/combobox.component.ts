@@ -822,7 +822,7 @@ export class UICombobox extends UIElement {
     `
   }
 
-  override render() {
+  protected override render(): unknown {
     const selectedOptions = this.#getSelectedOptions()
     const filteredOptions = this.#getFilteredOptions()
     const canCreate = this.#canCreate()
