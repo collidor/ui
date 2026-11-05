@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/collidor/ui/compare/v1.0.4...v1.0.5) (2026-11-05)
+
+
+### Bug Fixes
+
+* **themes:** eliminate hue gaps and harmonize pagination, table, and list tokens across troy, parchment, jade, and neumorphic themes ([ef1f1fb](https://github.com/collidor/ui/commit/ef1f1fbd27647704aae65420ed125ad424c9ab43))
+
 ## [1.0.4](https://github.com/collidor/ui/compare/v1.0.3...v1.0.4) (2026-11-05)
 
 
