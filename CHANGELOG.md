@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/collidor/ui/compare/v1.0.3...v1.0.4) (2026-11-05)
+
+
+### Bug Fixes
+
+* **ci:** wire NODE_AUTH_TOKEN and registry-url for npm publish ([a83970b](https://github.com/collidor/ui/commit/a83970b07c4ccf2aa929e723b5868c5b58acc72c))
+
 ## [1.0.3](https://github.com/collidor/ui/compare/v1.0.2...v1.0.3) (2026-11-05)
 
 
