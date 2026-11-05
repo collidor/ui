@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/collidor/ui/compare/v1.0.0...v1.0.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **release:** add provenance true, resolve catalog versions, and allow publish progression ([d539cf6](https://github.com/collidor/ui/commit/d539cf645dba6364350f5a3d53fea6d395b77197))
+
 # 1.0.0 (2026-11-05)
 
 
