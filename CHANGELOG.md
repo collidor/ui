@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/collidor/ui/compare/v1.0.2...v1.0.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* trigger package release with provenance and slow-types resolution ([a7f1d74](https://github.com/collidor/ui/commit/a7f1d74f4fe06bd6c9864652d993e643a0febb0f))
+
 ## [1.0.2](https://github.com/collidor/ui/compare/v1.0.1...v1.0.2) (2026-11-05)
 
 
