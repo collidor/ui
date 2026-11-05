@@ -35,6 +35,7 @@ jobs:
               with:
                   node-version: 24
                   cache: 'pnpm'
+                  registry-url: 'https://registry.npmjs.org'
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
@@ -55,13 +56,15 @@ jobs:
               continue-on-error: true
               run: |
                   if [ -f .release_flag ]; then
-                    npm_out=$(npm publish --provenance --access public 2>&1) || {
+                    npm_out=$(npm publish --access public 2>&1) || {
                       echo "::error title=NPM_PUBLISH_ERROR::$(echo "$npm_out" | tr '\n' ' ')"
                       exit 1
                     }
                   else
                     echo "No release flag found, skipping publish."
                   fi
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
             - name: Publish to JSR
               continue-on-error: true
