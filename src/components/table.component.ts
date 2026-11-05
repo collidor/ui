@@ -14,7 +14,7 @@ import {
     type TableSortEventDetail,
     UI_TAG_NAMES,
 } from "../constants.ts";
-import { safeString, sortData } from "../dataCollection.utils.ts";
+import { calculateVirtualWindow, safeString, sortData } from "../dataCollection.utils.ts";
 import { ifDefined } from "lit/directives/if-defined.js";
 import "./pagination.component.ts";
 import type { PaginationMode, StepperFormat } from "./pagination.component.ts";
@@ -98,7 +98,9 @@ export class UITable<
         selectedKeys: { attribute: false },
         selectedRows: { attribute: false },
         pageSizeOptions: { attribute: false },
+        virtual: { type: Object },
     };
+
 
     static override styles: CSSResultGroup = [
         UIHeaderedElement.styles,
@@ -718,6 +720,7 @@ export class UITable<
                                                     remote = false;
                                                     columnCustomization = false;
                                                     customizableColumns = false;
+                                                    virtual: any = false;
 
                                                     #data: T[] = [];
                                                     #rawUnsortedData: T[] = [];
@@ -731,6 +734,56 @@ export class UITable<
                                                         [5, 10, 25, 50];
                                                     #customizerOpen = false;
                                                     #syncingHeader = false;
+                                                    #scrollTop = 0;
+
+                                                    #onTableScroll = (e: Event): void => {
+                                                        const target = e.target as HTMLElement;
+                                                        this.#scrollTop = target.scrollTop;
+
+                                                        if (this.remote && !this.loading) {
+                                                            const threshold = 60;
+                                                            if (
+                                                                target.scrollTop + target.clientHeight >=
+                                                                target.scrollHeight - threshold
+                                                            ) {
+                                                                if (this.total > this.#data.length) {
+                                                                    const nextPage = (this.page || 1) + 1;
+                                                                    this.dispatchEvent(
+                                                                        new CustomEvent("ui-get-page", {
+                                                                            bubbles: true,
+                                                                            composed: true,
+                                                                            detail: {
+                                                                                page: nextPage,
+                                                                                pageSize: this.pageSize,
+                                                                                sort: this.sortBy
+                                                                                    ? {
+                                                                                          by: this.sortBy,
+                                                                                          direction:
+                                                                                              this.sortDirection,
+                                                                                      }
+                                                                                    : undefined,
+                                                                            },
+                                                                        }),
+                                                                    );
+                                                                }
+                                                            }
+                                                        }
+
+                                                        if (this.#isVirtualActive()) {
+                                                            this.requestUpdate();
+                                                        }
+                                                    };
+
+                                                    #isVirtualActive(): boolean {
+                                                        if (!this.virtual) return false;
+                                                        const threshold =
+                                                            typeof this.virtual === "object" &&
+                                                            typeof this.virtual.threshold === "number"
+                                                                ? this.virtual.threshold
+                                                                : 100;
+                                                        return this.#data.length >= threshold;
+                                                    }
+
 
                                                     fetchPage?: (
                                                         params:
@@ -2687,7 +2740,38 @@ export class UITable<
                                                             .filter(Boolean)
                                                             .join(" ");
 
+                                                        const virtualWin = calculateVirtualWindow(
+                                                            displayRows,
+                                                            this.#scrollTop,
+                                                            400,
+                                                            this.virtual,
+                                                            40,
+                                                            5,
+                                                            typeof this.virtual === "object" &&
+                                                                this.virtual !== null &&
+                                                                typeof this.virtual.threshold === "number"
+                                                                ? this.virtual.threshold
+                                                                : 100,
+                                                        );
+                                                        const isVirtual = virtualWin.isVirtual;
+                                                        const rowHeight = virtualWin.itemHeight;
+                                                        const visibleRows = virtualWin.visibleItems;
+                                                        const virtualStartIndex = virtualWin.startIndex;
+                                                        const topSpacer = virtualWin.offsetY;
+                                                        const bottomSpacer = Math.max(
+                                                            0,
+                                                            (displayRows.length - virtualWin.endIndex) * rowHeight,
+                                                        );
+                                                        const viewportHeight =
+                                                            typeof this.virtual === "object" &&
+                                                            typeof this.virtual.viewportHeight === "string"
+                                                                ? this.virtual.viewportHeight
+                                                                : "400px";
+
+                                                        const totalCols = activeCols.length + (this.selectable ? 1 : 0);
+
                                                         return html`
+
                                                             <div class="${rootClass}" part="root">
                                                                 ${showHeader
                                                                     ? html`
@@ -2735,8 +2819,18 @@ export class UITable<
                                                                         </div>
                                                                     `
                                                                     : nothing}
-                                                                <div class="table-scroll-container" part="scroll-container">
+                                                                <div
+                                                                    class="table-scroll-container"
+                                                                    part="scroll-container"
+                                                                    style="${isVirtual
+                                                                        ? `max-height: ${viewportHeight}; overflow-y: auto;`
+                                                                        : ""}"
+                                                                    @scroll="${isVirtual || this.remote
+                                                                        ? this.#onTableScroll
+                                                                        : nothing}"
+                                                                >
                                                                     <table part="table" role="table">
+
                                                                         ${showHeader
                                                                             ? this
                                                                                 .#renderHeader(
@@ -2765,30 +2859,41 @@ export class UITable<
                                                                                         </td>
                                                                                     </tr>
                                                                                 `
-                                                                                : repeat(
-                                                                                    displayRows,
-                                                                                    (
-                                                                                        row,
-                                                                                        idx,
-                                                                                    ) => this
-                                                                                        .getRowKey(
+                                                                                : html`
+                                                                                    ${topSpacer > 0
+                                                                                        ? html`<tr class="virtual-spacer-top" style="height: ${topSpacer}px; border: none; padding: 0;"><td colspan="${totalCols}" style="padding: 0; border: none;"></td></tr>`
+                                                                                        : nothing}
+                                                                                    ${repeat(
+                                                                                        visibleRows,
+                                                                                        (
                                                                                             row,
-                                                                                            startIndexOffset +
-                                                                                                idx,
-                                                                                        ),
-                                                                                    (
-                                                                                        row,
-                                                                                        idx,
-                                                                                    ) => this
-                                                                                        .#renderRow(
+                                                                                            idx,
+                                                                                        ) => this
+                                                                                            .getRowKey(
+                                                                                                row,
+                                                                                                startIndexOffset +
+                                                                                                    virtualStartIndex +
+                                                                                                    idx,
+                                                                                            ),
+                                                                                        (
                                                                                             row,
-                                                                                            startIndexOffset +
-                                                                                                idx,
-                                                                                            activeCols,
-                                                                                        ),
-                                                                                )}
+                                                                                            idx,
+                                                                                        ) => this
+                                                                                            .#renderRow(
+                                                                                                row,
+                                                                                                startIndexOffset +
+                                                                                                    virtualStartIndex +
+                                                                                                    idx,
+                                                                                                activeCols,
+                                                                                            ),
+                                                                                    )}
+                                                                                    ${bottomSpacer > 0
+                                                                                        ? html`<tr class="virtual-spacer-bottom" style="height: ${bottomSpacer}px; border: none; padding: 0;"><td colspan="${totalCols}" style="padding: 0; border: none;"></td></tr>`
+                                                                                        : nothing}
+                                                                                `}
                                                                         </tbody>
                                                                     </table>
+
                                                                     ${this
                                                                             .loading
                                                                         ? html`

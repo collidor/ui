@@ -16,6 +16,7 @@ import {
 } from "../constants.ts";
 import {
     calculatePagination,
+    calculateVirtualWindow,
     getSmartPaginationPages,
     safeString,
     sortData,
@@ -103,10 +104,12 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
         pageSize: { type: Number, attribute: "page-size", reflect: false },
         total: { type: Number, reflect: false },
         remote: bool(),
+        virtual: { type: Object },
         selectedKeys: { attribute: false },
         pageSizeOptions: { attribute: false },
         renderItem: { attribute: false },
     };
+
 
     static override styles: CSSResultGroup = [
         UIHeaderedElement.styles,
@@ -623,6 +626,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 emptyText = "No items found";
                 pagination = false;
                 remote = false;
+                virtual: any = false;
 
                 #data: T[] = [];
                 #rawUnsortedData: T[] = [];
@@ -630,10 +634,60 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 #pageSizeOptions: number[] = [5, 10, 25, 50];
                 #customItemRenderer: ItemRenderer<T> | null = null;
                 #acceptUnsorted = false;
+                #scrollTop = 0;
+
+                #onListScroll = (e: Event): void => {
+                    const target = e.target as HTMLElement;
+                    this.#scrollTop = target.scrollTop;
+
+                    if (this.remote && !this.loading) {
+                        const threshold = 60;
+                        if (
+                            target.scrollTop + target.clientHeight >=
+                            target.scrollHeight - threshold
+                        ) {
+                            if (this.total > this.#data.length) {
+                                const nextPage = (this.page || 1) + 1;
+                                this.dispatchEvent(
+                                    new CustomEvent("ui-get-page", {
+                                        bubbles: true,
+                                        composed: true,
+                                        detail: {
+                                            page: nextPage,
+                                            pageSize: this.pageSize,
+                                            sort: this.sortBy
+                                                ? {
+                                                      by: this.sortBy,
+                                                      direction:
+                                                          this.sortDirection,
+                                                  }
+                                                : undefined,
+                                        },
+                                    }),
+                                );
+                            }
+                        }
+                    }
+
+                    if (this.#isVirtualActive()) {
+                        this.requestUpdate();
+                    }
+                };
+
+                #isVirtualActive(): boolean {
+                    if (!this.virtual) return false;
+                    const threshold =
+                        typeof this.virtual === "object" &&
+                        typeof this.virtual.threshold === "number"
+                            ? this.virtual.threshold
+                            : 100;
+                    return this.#data.length >= threshold;
+                }
 
                 fetchPage?: (
                     params: DataGetPageParams,
                 ) => Promise<{ data: T[]; total?: number }> | void;
+
 
                 private getItemKey(item: T, idx: number): string {
                     const keyProp = this.itemKey || "id";
@@ -1327,15 +1381,39 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                         this.remote,
                     );
                     const {
-                        items: displayItems,
                         total: totalCount,
                         totalPages,
                         currentPage,
                         startItem,
                         endItem,
                     } = paginationResult;
+                    const displayItems = this.pagination ? paginationResult.items : this.#data;
                     const hasData = this.#data.length > 0;
-                    const startIndexOffset = (currentPage - 1) * this.pageSize;
+                    const startIndexOffset = this.pagination ? (currentPage - 1) * this.pageSize : 0;
+
+                    const virtualWin = calculateVirtualWindow(
+                        displayItems,
+                        this.#scrollTop,
+                        400,
+                        this.virtual,
+                        48,
+                        5,
+                        typeof this.virtual === "object" &&
+                            this.virtual !== null &&
+                            typeof this.virtual.threshold === "number"
+                            ? this.virtual.threshold
+                            : 100,
+                    );
+                    const isVirtual = virtualWin.isVirtual;
+                    const itemHeight = virtualWin.itemHeight;
+                    const totalHeight = virtualWin.totalHeight;
+                    const startIndex = virtualWin.startIndex;
+                    const visibleItems = virtualWin.visibleItems;
+                    const viewportHeight =
+                        typeof this.virtual === "object" &&
+                        typeof this.virtual.viewportHeight === "string"
+                            ? this.virtual.viewportHeight
+                            : "400px";
 
                     return html`
                         <div class="list-root size-${this.size} ${this.bordered
@@ -1361,29 +1439,66 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                 <slot name="header"></slot>
                                 ${headerToggleIcon(this.collapsible)}
                             </div>
-                            <div class="list-content layout-${this
-                                .layout}" part="content">
+                            <div
+                                class="list-content layout-${this.layout}"
+                                part="content"
+                                style="${isVirtual
+                                    ? `max-height: ${viewportHeight}; overflow-y: auto; position: relative;`
+                                    : ""}"
+                                @scroll="${isVirtual || this.remote
+                                    ? this.#onListScroll
+                                    : nothing}"
+                            >
                                 ${hasData
-                                    ? repeat(
-                                        displayItems,
-                                        (item, localIdx) =>
-                                            this.getItemKey(
-                                                item,
-                                                startIndexOffset + localIdx,
-                                            ),
-                                        (item, localIdx) =>
-                                            this.#renderItem(
-                                                item,
-                                                startIndexOffset + localIdx,
-                                            ),
-                                    )
+                                    ? isVirtual
+                                        ? html`
+                                              <div
+                                                  class="virtual-sizer"
+                                                  style="height: ${totalHeight}px; position: relative; width: 100%;"
+                                              >
+                                                  ${visibleItems.map(
+                                                      (item, i) => {
+                                                          const actualIdx =
+                                                              startIndex + i;
+                                                          return html`
+                                                              <div
+                                                                  style="position: absolute; top: ${actualIdx *
+                                                                  itemHeight}px; left: 0; right: 0; min-height: ${itemHeight}px;"
+                                                              >
+                                                                  ${this.#renderItem(
+                                                                      item,
+                                                                      startIndexOffset +
+                                                                          actualIdx,
+                                                                  )}
+                                                              </div>
+                                                          `;
+                                                      },
+                                                  )}
+                                              </div>
+                                          `
+                                        : repeat(
+                                              displayItems,
+                                              (item, localIdx) =>
+                                                  this.getItemKey(
+                                                      item,
+                                                      startIndexOffset +
+                                                          localIdx,
+                                                  ),
+                                              (item, localIdx) =>
+                                                  this.#renderItem(
+                                                      item,
+                                                      startIndexOffset +
+                                                          localIdx,
+                                                  ),
+                                          )
                                     : html`
-                                        <div class="empty-state" part="empty">
-                                            <slot name="empty">${this
-                                                .emptyText}</slot>
-                                        </div>
-                                    `}
+                                          <div class="empty-state" part="empty">
+                                              <slot name="empty">${this
+                                                  .emptyText}</slot>
+                                          </div>
+                                      `}
                             </div>
+
                             ${this.pagination
                                 ? html`
                                     <div class="footer-bar" part="footer">

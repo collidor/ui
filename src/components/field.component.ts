@@ -8,6 +8,7 @@ export class UIField extends UIElement {
     helper: { type: String, reflect: true },
     error: { type: String, reflect: true },
     required: bool(),
+    loading: bool(),
     orientation: { type: String, reflect: true },
   }
 
@@ -76,12 +77,39 @@ export class UIField extends UIElement {
       color: var(--ui-color-danger, oklch(0.65 0.22 25));
       font-weight: 500;
     }
+
+    .field-spinner {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: field-spin 600ms linear infinite;
+      vertical-align: middle;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      margin-left: var(--ui-space-4xs, 0.146em);
+    }
+
+    @keyframes field-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .field-spinner {
+        animation-duration: 1.5s;
+      }
+    }
   `
 
   label = ''
   helper = ''
   error = ''
   required = false
+  loading = false
   orientation: 'vertical' | 'horizontal' = 'vertical'
 
   #findControl(): HTMLElement | null {
@@ -148,13 +176,16 @@ export class UIField extends UIElement {
 
   protected override render(): unknown {
     return html`
-      <div class="field-container orientation-${this.orientation}" part="container">
+      <div class="field-container orientation-${this.orientation} ${this.loading ? 'loading' : ''}" part="container" ?aria-busy=${this.loading}>
         ${this.label
           ? html`<label class="label-wrapper" part="label" @click=${this.#onLabelClick}>
               <slot name="label">${this.label}</slot>
               ${this.required ? html`<span class="required-star" aria-hidden="true" part="required">*</span>` : nothing}
+              ${this.loading ? html`<span class="field-spinner" part="spinner" role="status" aria-label="Loading ${this.label || 'field'}"></span>` : nothing}
             </label>`
-          : nothing}
+          : this.loading
+            ? html`<span class="field-spinner" part="spinner" role="status" aria-label="Loading"></span>`
+            : nothing}
         <div class="control-wrapper" part="control">
           <slot @slotchange=${this.#syncControl}></slot>
           ${this.error

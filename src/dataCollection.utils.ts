@@ -252,3 +252,87 @@ export function createBackdropDismissHandler(onClose: () => void): {
 
   return { onPointerDown, onClick }
 }
+
+/**
+ * Shared Virtualization Window Calculation
+ *
+ * Computes visible slice, start index, end index, total height, and offset
+ * for virtualized components (<ui-combobox>, <ui-list>, <ui-table>).
+ */
+export interface VirtualScrollConfig {
+  enabled?: boolean
+  itemHeight?: number
+  viewportHeight?: string | number
+  overscan?: number
+  threshold?: number
+}
+
+export interface VirtualWindowResult<T> {
+  startIndex: number
+  endIndex: number
+  visibleItems: T[]
+  totalHeight: number
+  itemHeight: number
+  offsetY: number
+  isVirtual: boolean
+}
+
+export function calculateVirtualWindow<T>(
+  items: T[],
+  scrollTop: number,
+  viewportHeightPx: number,
+  config?: VirtualScrollConfig | boolean,
+  defaultItemHeight = 40,
+  defaultOverscan = 5,
+  defaultThreshold = 0,
+): VirtualWindowResult<T> {
+  const isVirtualConfigured = Boolean(
+    config && (typeof config === 'boolean' ? config : config.enabled !== false),
+  )
+  const threshold =
+    typeof config === 'object' && config !== null && typeof config.threshold === 'number'
+      ? config.threshold
+      : defaultThreshold
+
+  const isVirtual = isVirtualConfigured && items.length >= threshold
+
+  const itemHeight =
+    typeof config === 'object' && config !== null && typeof config.itemHeight === 'number'
+      ? config.itemHeight
+      : defaultItemHeight
+  const overscan =
+    typeof config === 'object' && config !== null && typeof config.overscan === 'number'
+      ? config.overscan
+      : defaultOverscan
+
+  const totalHeight = items.length * itemHeight
+
+  if (!isVirtual) {
+    return {
+      startIndex: 0,
+      endIndex: items.length,
+      visibleItems: items,
+      totalHeight,
+      itemHeight,
+      offsetY: 0,
+      isVirtual: false,
+    }
+  }
+
+  const visibleCount = Math.ceil(viewportHeightPx / itemHeight)
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan)
+  const endIndex = Math.min(items.length, startIndex + visibleCount + overscan * 2)
+  const visibleItems = items.slice(startIndex, endIndex)
+  const offsetY = startIndex * itemHeight
+
+  return {
+    startIndex,
+    endIndex,
+    visibleItems,
+    totalHeight,
+    itemHeight,
+    offsetY,
+    isVirtual: true,
+  }
+}
+

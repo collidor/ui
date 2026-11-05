@@ -19,6 +19,7 @@ export const UI_TAG_NAMES = {
   SLIDER: 'ui-slider',
   SWITCH: 'ui-switch',
   SELECT: 'ui-select',
+  COMBOBOX: 'ui-combobox',
   FIELD: 'ui-field',
   CARD: 'ui-card',
   TABS: 'ui-tabs',
@@ -46,6 +47,8 @@ export const UI_TAG_NAMES = {
   CHIP_GROUP: 'ui-chip-group',
   POPOVER: 'ui-popover',
   CONTEXT_MENU: 'ui-context-menu',
+  STEPPER: 'ui-stepper',
+  STEP: 'ui-step',
 } as const
 
 export type Variant =

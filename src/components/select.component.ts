@@ -1,4 +1,4 @@
-import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
+import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations, type PropertyValues } from 'lit'
 import { live } from 'lit/directives/live.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
@@ -6,7 +6,9 @@ import { UI_TAG_NAMES, type Size } from '../constants.ts'
 export class UISelect extends UIElement {
   static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
+    options: { type: Array },
     disabled: bool(),
+    loading: bool(),
     size: { type: String, reflect: true },
     placeholder: { type: String, reflect: true },
     label: { type: String, reflect: true },
@@ -29,11 +31,7 @@ export class UISelect extends UIElement {
       display: none !important;
     }
 
-    /* Modern Customizable Select */
-    select,
-    ::picker(select) {
-      appearance: base-select;
-    }
+    /* Modern Customizable Select handled conditionally via @supports */
 
     .select-wrapper {
       position: relative;
@@ -95,9 +93,7 @@ export class UISelect extends UIElement {
     }
 
     select {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: block;
       width: 100%;
       min-width: 0;
       flex: 1;
@@ -110,7 +106,10 @@ export class UISelect extends UIElement {
       outline: none;
       cursor: pointer;
       padding: 0;
+      padding-right: var(--ui-space-lg, 2.618em);
       margin: 0;
+      -webkit-appearance: none;
+      appearance: none;
     }
 
     select::picker-icon {
@@ -215,41 +214,99 @@ export class UISelect extends UIElement {
       }
     }
 
-    @supports not (appearance: base-select) {
-      select {
-        -webkit-appearance: none;
-        appearance: none;
-        padding-right: var(--ui-space-lg, 2.618em);
-      }
+    .fallback-chevron {
+      position: absolute;
+      right: var(--ui-space-3xs, 0.236em);
+      pointer-events: none;
+      color: var(--ui-input-color, var(--ui-color-text-muted, oklch(0.7 0.02 260)));
+      font-size: 0.7em;
+      display: flex;
+      align-items: center;
+    }
 
-      .fallback-chevron {
-        position: absolute;
-        right: var(--ui-space-3xs, 0.236em);
-        pointer-events: none;
-        color: var(--ui-input-color, var(--ui-color-text-muted, oklch(0.7 0.02 260)));
-        font-size: 0.7em;
-        display: flex;
-        align-items: center;
-      }
+    .select-spinner {
+      position: absolute;
+      right: var(--ui-space-3xs, 0.236em);
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: select-spin 600ms linear infinite;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
 
-      select option {
-        background-color: var(
-          --ui-input-bg,
-          var(--ui-color-surface-elevated, oklch(0.22 0.025 260))
-        );
-        color: var(--ui-input-color, var(--ui-color-text, oklch(0.96 0.01 260)));
+    @keyframes select-spin {
+      to {
+        transform: rotate(360deg);
       }
     }
 
+    @media (prefers-reduced-motion: reduce) {
+      .select-spinner {
+        animation-duration: 1.5s;
+      }
+    }
+
+    select option {
+      background-color: var(
+        --ui-input-bg,
+        var(--ui-color-surface-elevated, oklch(0.22 0.025 260))
+      );
+      color: var(--ui-input-color, var(--ui-color-text, oklch(0.96 0.01 260)));
+    }
+
     @supports (appearance: base-select) {
+      select,
+      ::picker(select) {
+        appearance: base-select;
+      }
+
+      select {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-right: 0;
+      }
+
       .fallback-chevron {
         display: none !important;
+      }
+
+      select button.select-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-width: 0;
+        border: none;
+        background: transparent;
+        color: inherit;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        outline: none;
+        text-align: start;
+      }
+
+      selectedcontent {
+        display: inline-block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   `
 
   value = ''
+  options: Array<{ value: string | number; label: string; disabled?: boolean }> = []
   disabled = false
+  loading = false
   size: Size = 'md'
   placeholder = ''
   label = ''
@@ -310,6 +367,10 @@ export class UISelect extends UIElement {
 
   #valueFromLightDom(): string {
     if (this.value) return this.value
+    if (Array.isArray(this.options) && this.options.length) {
+      const first = this.options.find((o) => !o.disabled)
+      if (first && !this.placeholder) return String(first.value)
+    }
     let firstEnabled: string | null = null
     for (const node of this.querySelectorAll('option')) {
       if (!(node instanceof HTMLOptionElement) || node.disabled) continue
@@ -350,6 +411,20 @@ export class UISelect extends UIElement {
     const currentValue = this.value
     select.replaceChildren()
 
+    const supportsBaseSelect =
+      typeof CSS !== 'undefined' &&
+      typeof CSS.supports === 'function' &&
+      CSS.supports('appearance', 'base-select')
+
+    if (supportsBaseSelect) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'select-btn'
+      const sc = document.createElement('selectedcontent')
+      btn.appendChild(sc)
+      select.append(btn)
+    }
+
     if (this.placeholder) {
       const phOption = document.createElement('option')
       phOption.value = ''
@@ -359,8 +434,8 @@ export class UISelect extends UIElement {
       select.append(phOption)
     }
 
-    const options = Array.from(this.querySelectorAll('option, optgroup'))
-    for (const node of options) {
+    const slotted = Array.from(this.querySelectorAll('option, optgroup'))
+    for (const node of slotted) {
       if (node instanceof HTMLOptionElement) {
         if (node.closest('optgroup')) continue
         select.append(this.#copyOption(node, currentValue))
@@ -375,11 +450,31 @@ export class UISelect extends UIElement {
       }
     }
 
+    if (Array.isArray(this.options) && slotted.length === 0) {
+      for (const opt of this.options) {
+        const optionEl = document.createElement('option')
+        optionEl.value = String(opt.value)
+        optionEl.textContent = opt.label ?? String(opt.value)
+        if (opt.disabled) optionEl.disabled = true
+        if (String(opt.value) === currentValue) optionEl.selected = true
+        select.append(optionEl)
+      }
+    }
+
     if (currentValue) select.value = currentValue
     if (select.value !== this.value) this.value = select.value
   }
 
-  protected override updated(): void {
+  protected override updated(changed: PropertyValues): void {
+    if (changed.has('value')) {
+      const select = this.shadow.querySelector('select')
+      if (select && select.value !== this.value) {
+        select.value = this.value
+      }
+    }
+    if (changed.has('options')) {
+      this.#optionsRevision++
+    }
     if (this.#renderedRevision === this.#optionsRevision) return
     this.#renderedRevision = this.#optionsRevision
     this.#syncOptions()
@@ -389,10 +484,10 @@ export class UISelect extends UIElement {
     const effectiveLabel = this.ariaLabel || this.label || nothing
 
     return html`
-      <div class="select-wrapper size-${this.size} ${this.disabled ? 'disabled' : ''} ${this.invalid ? 'invalid' : ''}" part="wrapper">
+      <div class="select-wrapper size-${this.size} ${this.disabled || this.loading ? 'disabled' : ''} ${this.loading ? 'loading' : ''} ${this.invalid ? 'invalid' : ''}" part="wrapper" ?aria-busy=${this.loading}>
         <slot name="prefix" part="prefix"></slot>
         <select
-          ?disabled=${this.disabled}
+          ?disabled=${this.disabled || this.loading}
           ?required=${this.required}
           aria-label=${effectiveLabel}
           aria-labelledby=${this.ariaLabelledby || nothing}
@@ -403,7 +498,9 @@ export class UISelect extends UIElement {
           .value=${live(this.value)}
           @change=${this.#onChange}
         ></select>
-        <div class="fallback-chevron" part="chevron">▼</div>
+        ${this.loading
+          ? html`<span class="select-spinner" part="spinner" role="status" aria-label="Loading options"></span>`
+          : html`<div class="fallback-chevron" part="chevron">▼</div>`}
         <div class="hidden-slot"><slot @slotchange=${this.#onSlotChange}></slot></div>
       </div>
     `

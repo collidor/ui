@@ -16,7 +16,9 @@ import './components/number-input.component.ts'
 import './components/slider.component.ts'
 import './components/switch.component.ts'
 import './components/select.component.ts'
+import './components/combobox.component.ts'
 import './components/field.component.ts'
+
 import './components/card.component.ts'
 import './components/tabs.component.ts'
 import './components/icon.component.ts'
@@ -36,6 +38,7 @@ import './components/accordion.component.ts'
 import './components/chip.component.ts'
 import './components/popover.component.ts'
 import './components/context-menu.component.ts'
+import './components/stepper.component.ts'
 
 // Export Base Classes & Types
 export { UIElement } from './base.element.ts'
@@ -55,7 +58,13 @@ export { UINumberInput } from './components/number-input.component.ts'
 export { UISlider } from './components/slider.component.ts'
 export { UISwitch } from './components/switch.component.ts'
 export { UISelect } from './components/select.component.ts'
+export {
+  UICombobox,
+  type ComboboxOption,
+  type ComboboxVirtualConfig,
+} from './components/combobox.component.ts'
 export { UIField } from './components/field.component.ts'
+
 export { UICard } from './components/card.component.ts'
 export { UITabs, UITab } from './components/tabs.component.ts'
 export { UIIcon } from './components/icon.component.ts'
@@ -75,6 +84,7 @@ export { UIAccordion, UIAccordionItem } from './components/accordion.component.t
 export { UIChip, UIChipGroup } from './components/chip.component.ts'
 export { UIPopover, type PopoverType, type PopoverPlacement } from './components/popover.component.ts'
 export { UIContextMenu } from './components/context-menu.component.ts'
+export { UIStepper, UIStep } from './components/stepper.component.ts'
 
 // Export OKLCH Accessibility Contrast Engine
 export {
