@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/collidor/ui/compare/v1.0.1...v1.0.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* **combobox:** add explicit return type to render method and use deno publish ([5561b3d](https://github.com/collidor/ui/commit/5561b3d8df131e3e1e94914c4b348f7d1dac4a45))
+
 ## [1.0.1](https://github.com/collidor/ui/compare/v1.0.0...v1.0.1) (2026-11-05)
 
 
