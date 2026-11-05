@@ -506,7 +506,10 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                         display: flex;
                         align-items: center;
                         gap: var(--ui-space-xs, 0.618em);
-                        color: var(--ui-color-text-muted, oklch(0.7 0.02 260));
+                        color: var(
+                            --ui-list-footer-color,
+                            var(--ui-pagination-text-color, var(--ui-color-text-muted, oklch(0.7 0.02 260)))
+                        );
                         font-size: 0.8rem;
                     }
 
@@ -518,20 +521,46 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
 
                     .page-size-select {
                         background: var(
-                            --ui-table-page-btn-bg,
-                            var(--ui-color-surface-hover, oklch(0.24 0.025 260))
+                            --ui-list-page-btn-bg,
+                            var(
+                                --ui-pagination-select-bg,
+                                var(
+                                    --ui-table-page-btn-bg,
+                                    var(--ui-color-surface-hover, oklch(0.24 0.025 260))
+                                )
+                            )
                         );
                         color: var(
-                            --ui-table-page-btn-color,
-                            var(--ui-color-text, oklch(0.96 0.01 260))
+                            --ui-list-page-btn-color,
+                            var(
+                                --ui-pagination-select-color,
+                                var(
+                                    --ui-table-page-btn-color,
+                                    var(--ui-color-text, oklch(0.96 0.01 260))
+                                )
+                            )
                         );
                         border: 1px solid
-                            var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5));
+                            var(
+                                --ui-list-page-btn-border,
+                                var(
+                                    --ui-pagination-select-border,
+                                    var(
+                                        --ui-table-page-btn-border,
+                                        var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5))
+                                    )
+                                )
+                            );
                         border-radius: var(--ui-radius-sm, 0.146em);
                         padding: 2px 6px;
                         font-size: 0.75rem;
                         outline: none;
                         cursor: pointer;
+                    }
+
+                    .page-size-select:focus-visible {
+                        outline: 2px solid var(--ui-color-focus-ring, var(--ui-color-primary, oklch(0.65 0.19 230)));
+                        outline-offset: 1px;
                     }
 
                     .pagination-controls {
@@ -548,14 +577,35 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                         align-items: center;
                         justify-content: center;
                         background: var(
-                            --ui-table-page-btn-bg,
-                            var(--ui-color-surface-hover, oklch(0.24 0.025 260))
+                            --ui-list-page-btn-bg,
+                            var(
+                                --ui-pagination-btn-bg,
+                                var(
+                                    --ui-table-page-btn-bg,
+                                    var(--ui-color-surface-hover, oklch(0.24 0.025 260))
+                                )
+                            )
                         );
                         border: 1px solid
-                            var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5));
+                            var(
+                                --ui-list-page-btn-border,
+                                var(
+                                    --ui-pagination-btn-border,
+                                    var(
+                                        --ui-table-page-btn-border,
+                                        var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.5))
+                                    )
+                                )
+                            );
                         color: var(
-                            --ui-table-page-btn-color,
-                            var(--ui-color-text, oklch(0.96 0.01 260))
+                            --ui-list-page-btn-color,
+                            var(
+                                --ui-pagination-btn-color,
+                                var(
+                                    --ui-table-page-btn-color,
+                                    var(--ui-color-text, oklch(0.96 0.01 260))
+                                )
+                            )
                         );
                         border-radius: var(--ui-radius-sm, 0.146em);
                         font-size: 0.75rem;
@@ -568,39 +618,84 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                             border-color
                             var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1)),
                             color var(--ui-transition-fast, 146ms cubic-bezier(0.4, 0, 0.2, 1));
-                        }
+                    }
 
-                        .page-btn:hover:not(:disabled) {
-                            background: var(--ui-color-surface-active, oklch(0.28 0.03 260));
-                            border-color: var(--ui-color-border-hover, oklch(0.44 0.03 260));
-                            color: var(
-                                --ui-table-page-btn-color,
-                                var(--ui-color-text, oklch(0.96 0.01 260))
-                            );
-                        }
+                    .page-btn:hover:not(:disabled):not(.active) {
+                        background: var(
+                            --ui-list-page-btn-hover-bg,
+                            var(
+                                --ui-pagination-btn-hover-bg,
+                                var(
+                                    --ui-table-page-btn-hover-bg,
+                                    var(--ui-color-surface-active, oklch(0.28 0.03 260))
+                                )
+                            )
+                        );
+                        border-color: var(
+                            --ui-list-page-btn-hover-border,
+                            var(
+                                --ui-pagination-btn-hover-border,
+                                var(--ui-color-border-hover, oklch(0.44 0.03 260))
+                            )
+                        );
+                        color: var(
+                            --ui-list-page-btn-hover-color,
+                            var(
+                                --ui-pagination-btn-hover-color,
+                                var(
+                                    --ui-table-page-btn-color,
+                                    var(--ui-color-text, oklch(0.96 0.01 260))
+                                )
+                            )
+                        );
+                    }
 
-                        .page-btn.active {
-                            background: var(--ui-color-primary, oklch(0.65 0.19 230));
-                            border-color: var(--ui-color-primary, oklch(0.65 0.19 230));
-                            color: var(--ui-color-primary-text, oklch(0.98 0 0));
-                            font-weight: 700;
-                        }
+                    .page-btn.active {
+                        background: var(
+                            --ui-list-page-btn-active-bg,
+                            var(
+                                --ui-pagination-btn-active-bg,
+                                var(
+                                    --ui-table-page-btn-active-bg,
+                                    var(--ui-color-primary, oklch(0.65 0.19 230))
+                                )
+                            )
+                        );
+                        border-color: var(
+                            --ui-list-page-btn-active-border,
+                            var(
+                                --ui-pagination-btn-active-border,
+                                var(--ui-color-primary, oklch(0.65 0.19 230))
+                            )
+                        );
+                        color: var(
+                            --ui-list-page-btn-active-color,
+                            var(
+                                --ui-pagination-btn-active-color,
+                                var(--ui-color-primary-text, oklch(0.98 0 0))
+                            )
+                        );
+                        font-weight: 700;
+                    }
 
-                        .page-btn:disabled {
-                            opacity: 0.4;
-                            cursor: not-allowed;
-                        }
+                    .page-btn:disabled {
+                        opacity: 0.4;
+                        cursor: not-allowed;
+                    }
 
-                        .page-ellipsis {
-                            padding: 0 var(--ui-space-4xs, 0.146em);
-                            color: var(--ui-color-text-muted, oklch(0.7 0.02 260));
-                            font-weight: bold;
-                        }
+                    .page-ellipsis {
+                        padding: 0 var(--ui-space-4xs, 0.146em);
+                        color: var(
+                            --ui-list-footer-color,
+                            var(--ui-pagination-text-color, var(--ui-color-text-muted, oklch(0.7 0.02 260)))
+                        );
+                        font-weight: bold;
+                    }
 
-                        .page-btn:focus-visible {
-                            outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
-                            outline-offset: 1px;
-                        }
+                    .page-btn:focus-visible {
+                        outline: 2px solid var(--ui-color-focus-ring, var(--ui-color-primary, oklch(0.65 0.19 230)));
+                        outline-offset: 1px;
+                    }
 
                         @media (prefers-reduced-motion: reduce) {
                             .loading-spinner {

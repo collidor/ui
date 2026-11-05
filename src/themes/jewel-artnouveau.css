@@ -10,8 +10,10 @@
  */
 
 .theme-jewel-artnouveau,
+.theme-jade,
 [data-theme="jewel"],
-[data-theme="jewel-artnouveau"] {
+[data-theme="jewel-artnouveau"],
+[data-theme="jade"] {
   /* Jewel Color System */
   --ui-jewel-jade: #4ea388;
   --ui-jewel-jade-hover: #5ca68c;
@@ -83,9 +85,117 @@
 
   /* Card and Studio Container Hooks */
   --ui-card-bg: #1c1c1c;
+  --ui-card-color: #fff4dd;
   --ui-card-border: 1px solid #333333;
+  --ui-card-radius: 4px;
   --ui-card-header-bg: #242424;
   --ui-card-header-border: 1px solid #383838;
+  --ui-card-header-color: #fff4dd;
+  --ui-card-footer-bg: #1e1e1e;
+  --ui-card-footer-color: #d5cbb8;
+  --ui-card-footer-border: 1px solid #333333;
+
+  /* Form Input Hooks */
+  --ui-input-bg: #202020;
+  --ui-input-color: #fff4dd;
+  --ui-input-placeholder-color: #968c7c;
+  --ui-input-border: 1px solid #383838;
+  --ui-input-radius: 4px;
+  --ui-input-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* Table Hooks (Obsidian & Carved Jade) */
+  --ui-table-bg: #1c1c1c;
+  --ui-table-color: #fff4dd;
+  --ui-table-border: 1px solid #333333;
+  --ui-table-border-color: #333333;
+  --ui-table-radius: 4px;
+  --ui-table-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --ui-table-header-bg: #242424;
+  --ui-table-header-color: #fff4dd;
+  --ui-table-header-bar-bg: #242424;
+  --ui-table-header-border: 1px solid #383838;
+  --ui-table-footer-bar-bg: #1e1e1e;
+  --ui-table-footer-color: #d5cbb8;
+  --ui-table-footer-border: 1px solid #333333;
+  --ui-table-row-stripe: #202020;
+  --ui-table-row-hover: #292929;
+  --ui-table-row-selected-bg: rgba(78, 163, 136, 0.22);
+  --ui-table-page-btn-bg: #262626;
+  --ui-table-page-btn-color: #fff4dd;
+  --ui-table-page-btn-border: #383838;
+  --ui-table-page-btn-hover-bg: #333333;
+  --ui-table-page-btn-hover-border: #9b7536;
+  --ui-table-page-btn-active-bg: #4ea388;
+  --ui-table-page-btn-active-color: #ffffff;
+  --ui-table-page-btn-active-border: #4ea388;
+
+  /* Pagination Component Hooks */
+  --ui-pagination-bg: transparent;
+  --ui-pagination-text-color: #d5cbb8;
+  --ui-pagination-btn-bg: #262626;
+  --ui-pagination-btn-color: #fff4dd;
+  --ui-pagination-btn-border: #383838;
+  --ui-pagination-btn-hover-bg: #333333;
+  --ui-pagination-btn-hover-color: #fff4dd;
+  --ui-pagination-btn-hover-border: #9b7536;
+  --ui-pagination-btn-active-bg: #4ea388;
+  --ui-pagination-btn-active-color: #ffffff;
+  --ui-pagination-btn-active-border: #4ea388;
+  --ui-pagination-select-bg: #262626;
+  --ui-pagination-select-color: #fff4dd;
+  --ui-pagination-select-border: #383838;
+
+  /* List Component Hooks */
+  --ui-list-bg: #1c1c1c;
+  --ui-list-color: #fff4dd;
+  --ui-list-border: 1px solid #333333;
+  --ui-list-radius: 4px;
+  --ui-list-header-bg: #242424;
+  --ui-list-header-color: #fff4dd;
+  --ui-list-footer-bar-bg: #1e1e1e;
+  --ui-list-footer-color: #d5cbb8;
+  --ui-list-footer-border: 1px solid #333333;
+  --ui-list-item-bg: #1c1c1c;
+  --ui-list-item-hover-bg: #292929;
+  --ui-list-item-hover-border: #9b7536;
+  --ui-list-item-selected-bg: rgba(78, 163, 136, 0.22);
+  --ui-list-page-btn-bg: #262626;
+  --ui-list-page-btn-color: #fff4dd;
+  --ui-list-page-btn-border: #383838;
+  --ui-list-page-btn-hover-bg: #333333;
+  --ui-list-page-btn-hover-border: #9b7536;
+  --ui-list-page-btn-active-bg: #4ea388;
+  --ui-list-page-btn-active-color: #ffffff;
+
+  /* Dialog Hooks */
+  --ui-dialog-bg: #1c1c1c;
+  --ui-dialog-color: #fff4dd;
+  --ui-dialog-header-bg: #242424;
+  --ui-dialog-header-color: #fff4dd;
+  --ui-dialog-footer-bg: #1e1e1e;
+  --ui-dialog-footer-color: #d5cbb8;
+
+  /* Popover, Menu & Select Hooks */
+  --ui-popover-bg: #1e1e1e;
+  --ui-popover-color: #fff4dd;
+  --ui-popover-border: #383838;
+  --ui-menu-bg: #1e1e1e;
+  --ui-menu-color: #fff4dd;
+  --ui-menu-border: #383838;
+  --ui-menu-radius: 4px;
+  --ui-select-menu-bg: #1e1e1e;
+  --ui-select-menu-radius: 4px;
+  --ui-select-menu-border: #383838;
+
+  /* Tabs Hooks */
+  --ui-tab-text-color: #d5cbb8;
+  --ui-tab-active-color: #fff4dd;
+  --ui-tab-active-bg: rgba(78, 163, 136, 0.22);
+  --ui-tab-active-border: #4ea388;
+
+  /* Tooltip Hooks */
+  --ui-tooltip-bg: #262626;
+  --ui-tooltip-color: #fff4dd;
 }
 
 /* Specific Jewel-themed button overrides */

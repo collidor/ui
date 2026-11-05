@@ -40,11 +40,11 @@ export class UIPopover extends UIElement {
         .popover-surface {
             margin: 0;
             padding: 8px;
-            border: 1px solid var(--ui-color-border, oklch(0.32 0.03 260));
-            border-radius: var(--ui-radius-md, 0.382em);
-            background: var(--ui-color-surface-elevated, oklch(0.20 0.025 260));
-            color: var(--ui-color-text, oklch(0.96 0.01 260));
-            box-shadow: var(--ui-shadow-xl, 0 12px 32px rgba(0, 0, 0, 0.7));
+            border: 1px solid var(--ui-popover-border, var(--ui-menu-border, var(--ui-color-border, oklch(0.32 0.03 260))));
+            border-radius: var(--ui-popover-radius, var(--ui-menu-radius, var(--ui-radius-md, 0.382em)));
+            background: var(--ui-popover-bg, var(--ui-menu-bg, var(--ui-color-surface-elevated, oklch(0.20 0.025 260))));
+            color: var(--ui-popover-color, var(--ui-menu-color, var(--ui-color-text, oklch(0.96 0.01 260))));
+            box-shadow: var(--ui-popover-shadow, var(--ui-shadow-xl, 0 12px 32px rgba(0, 0, 0, 0.7)));
             font-family: var(--ui-font-family, ui-sans-serif, system-ui);
             box-sizing: border-box;
             min-width: 160px;

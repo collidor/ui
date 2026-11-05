@@ -15,9 +15,12 @@
   /* Canvas Surface & Base (Volcanic Basalt Stone & Weathered Bronze) */
   --ui-color-surface: oklch(0.15 0.02 45); /* Dark volcanic basalt #171310 */
   --ui-color-surface-elevated: oklch(0.22 0.03 48); /* Dark bronze stone slab #231c17 */
+  --ui-color-surface-hover: oklch(0.20 0.025 45);
+  --ui-color-surface-active: oklch(0.12 0.02 45);
   --ui-color-border: oklch(0.58 0.12 70); /* Antique Homeric bronze #946d33 */
   --ui-color-border-subtle: oklch(0.38 0.06 55); /* Dark weathered bronze #473522 */
   --ui-color-border-hover: oklch(0.75 0.16 78); /* Polished radiant gold */
+  --ui-color-focus-ring: oklch(0.75 0.16 78 / 0.5);
 
   /* Global Typography (Greek Marble White & Radiant Gold on Dark Basalt Canvas) */
   --ui-color-text: oklch(0.95 0.03 75); /* Polished Greek marble white #f6eee3 */
@@ -116,6 +119,82 @@
   --ui-table-row-stripe: oklch(0.86 0.04 76);
   --ui-table-row-hover: oklch(0.82 0.06 75);
   --ui-table-row-selected-bg: oklch(0.68 0.16 75 / 0.35);
+  --ui-table-page-btn-bg: oklch(0.92 0.035 80);
+  --ui-table-page-btn-color: oklch(0.16 0.03 40);
+  --ui-table-page-btn-border: oklch(0.65 0.08 70 / 0.5);
+  --ui-table-page-btn-hover-bg: oklch(0.82 0.06 75);
+  --ui-table-page-btn-hover-border: oklch(0.58 0.12 70);
+  --ui-table-page-btn-active-bg: oklch(0.48 0.18 42);
+  --ui-table-page-btn-active-color: oklch(0.98 0.02 85);
+  --ui-table-page-btn-active-border: oklch(0.48 0.18 42);
+
+  /* Pagination Component Hooks */
+  --ui-pagination-bg: transparent;
+  --ui-pagination-text-color: oklch(0.32 0.06 45);
+  --ui-pagination-btn-bg: oklch(0.92 0.035 80);
+  --ui-pagination-btn-color: oklch(0.16 0.03 40);
+  --ui-pagination-btn-border: oklch(0.65 0.08 70 / 0.5);
+  --ui-pagination-btn-hover-bg: oklch(0.82 0.06 75);
+  --ui-pagination-btn-hover-color: oklch(0.16 0.03 40);
+  --ui-pagination-btn-hover-border: oklch(0.58 0.12 70);
+  --ui-pagination-btn-active-bg: oklch(0.48 0.18 42);
+  --ui-pagination-btn-active-color: oklch(0.98 0.02 85);
+  --ui-pagination-btn-active-border: oklch(0.48 0.18 42);
+  --ui-pagination-select-bg: oklch(0.92 0.035 80);
+  --ui-pagination-select-color: oklch(0.16 0.03 40);
+  --ui-pagination-select-border: oklch(0.65 0.08 70 / 0.5);
+
+  /* List Component Hooks */
+  --ui-list-bg: oklch(0.90 0.04 78);
+  --ui-list-color: oklch(0.16 0.03 40);
+  --ui-list-border: 1px solid oklch(0.52 0.12 65);
+  --ui-list-radius: 2px;
+  --ui-list-header-bg: oklch(0.42 0.18 38);
+  --ui-list-header-color: oklch(0.96 0.05 85);
+  --ui-list-footer-bar-bg: oklch(0.86 0.04 76);
+  --ui-list-footer-color: oklch(0.32 0.06 45);
+  --ui-list-footer-border: 1px solid oklch(0.52 0.12 65 / 0.5);
+  --ui-list-item-bg: oklch(0.90 0.04 78);
+  --ui-list-item-hover-bg: oklch(0.82 0.06 75);
+  --ui-list-item-hover-border: oklch(0.58 0.12 70);
+  --ui-list-item-selected-bg: oklch(0.68 0.16 75 / 0.35);
+  --ui-list-page-btn-bg: oklch(0.92 0.035 80);
+  --ui-list-page-btn-color: oklch(0.16 0.03 40);
+  --ui-list-page-btn-border: oklch(0.65 0.08 70 / 0.5);
+  --ui-list-page-btn-hover-bg: oklch(0.82 0.06 75);
+  --ui-list-page-btn-hover-border: oklch(0.58 0.12 70);
+  --ui-list-page-btn-active-bg: oklch(0.48 0.18 42);
+  --ui-list-page-btn-active-color: oklch(0.98 0.02 85);
+
+  /* Popover, Menu & Select Hooks */
+  --ui-popover-bg: oklch(0.20 0.03 48);
+  --ui-popover-color: oklch(0.95 0.03 75);
+  --ui-popover-border: oklch(0.52 0.12 65);
+  --ui-menu-bg: oklch(0.20 0.03 48);
+  --ui-menu-color: oklch(0.95 0.03 75);
+  --ui-menu-border: oklch(0.52 0.12 65);
+  --ui-menu-radius: 2px;
+  --ui-select-menu-bg: oklch(0.20 0.03 48);
+  --ui-select-menu-radius: 2px;
+  --ui-select-menu-border: oklch(0.52 0.12 65);
+
+  /* Dialog Hooks */
+  --ui-dialog-bg: oklch(0.90 0.04 78);
+  --ui-dialog-color: oklch(0.16 0.03 40);
+  --ui-dialog-header-bg: oklch(0.42 0.18 38);
+  --ui-dialog-header-color: oklch(0.96 0.05 85);
+  --ui-dialog-footer-bg: oklch(0.86 0.04 76);
+  --ui-dialog-footer-color: oklch(0.32 0.06 45);
+
+  /* Tabs Hooks */
+  --ui-tab-text-color: oklch(0.78 0.08 75);
+  --ui-tab-active-color: oklch(0.95 0.03 75);
+  --ui-tab-active-bg: oklch(0.48 0.18 42 / 0.25);
+  --ui-tab-active-border: oklch(0.68 0.16 75);
+
+  /* Tooltip Hooks */
+  --ui-tooltip-bg: oklch(0.18 0.03 45);
+  --ui-tooltip-color: oklch(0.95 0.03 75);
 
   /* Axon Graph Grid, Ports & Edges (Total War Troy Palette) */
   --ndd-background-dot-small: oklch(0.38 0.06 55);
@@ -140,6 +219,12 @@
 [data-theme='troy-strategy'] .card,
 .theme-troy-strategy ui-table,
 [data-theme='troy-strategy'] ui-table,
+.theme-troy-strategy ui-list,
+[data-theme='troy-strategy'] ui-list,
+.theme-troy-strategy .list,
+[data-theme='troy-strategy'] .list,
+.theme-troy-strategy ui-dialog,
+[data-theme='troy-strategy'] ui-dialog,
 .theme-troy-strategy axon-box,
 [data-theme='troy-strategy'] axon-box,
 .theme-troy-strategy .axon-node-card,
