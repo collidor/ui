@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/collidor/ui/compare/v1.0.5...v1.1.0) (2026-11-12)
+
+
+### Features
+
+* **table:** support lit TemplateResult in column formatter alongside HTMLElement ([580eef0](https://github.com/collidor/ui/commit/580eef02e3daf3dc932005b79f242f0373d38276))
+
 ## [1.0.5](https://github.com/collidor/ui/compare/v1.0.4...v1.0.5) (2026-11-05)
 
 
