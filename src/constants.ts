@@ -79,7 +79,7 @@ export interface TableColumn<T = Record<string, unknown>> {
   sortable?: boolean
   hidden?: boolean
   resizable?: boolean
-  formatter?: (value: unknown, row: T, index: number) => string | HTMLElement
+  formatter?: (value: unknown, row: T, index: number) => unknown
 }
 
 export interface DataSortEventDetail<T = Record<string, unknown>> {

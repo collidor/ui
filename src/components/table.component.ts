@@ -2257,7 +2257,7 @@ export class UITable<
                                                         col: TableColumn<T>,
                                                         row: T,
                                                         index: number,
-                                                    ): string | HTMLElement {
+                                                    ): unknown {
                                                         if (!col.formatter) {
                                                             return safeString(
                                                                 row[col.key],
@@ -2273,9 +2273,11 @@ export class UITable<
                                                                     index,
                                                                 );
                                                             if (
-                                                                result instanceof
-                                                                    HTMLElement
-                                                            ) return result;
+                                                                result instanceof Node ||
+                                                                (result && typeof result === "object" && "_$litType$" in result)
+                                                            ) {
+                                                                return result;
+                                                            }
                                                             return safeString(
                                                                 result,
                                                             );

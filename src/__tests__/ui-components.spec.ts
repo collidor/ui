@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { html } from "lit";
 import "../index.ts";
 import {
     goldenSpace,
@@ -585,6 +586,27 @@ describe("UI Web Components Library", () => {
 
             const cells = table.shadowRoot?.querySelectorAll("tbody td");
             expect(cells?.[1].textContent).toBe("$19.90");
+
+            document.body.removeChild(table);
+        });
+
+        it("should support custom column formatters returning Lit TemplateResult", async () => {
+            const table = document.createElement(UI_TAG_NAMES.TABLE) as UITable;
+            table.columns = [
+                {
+                    key: "role",
+                    label: "Role",
+                    formatter: (val, row) => html`<span class="lit-pill" data-id="${row.id}">${String(val).toUpperCase()}</span>`,
+                },
+            ];
+            table.data = [{ id: "usr_42", role: "admin" }];
+            document.body.appendChild(table);
+            await table.updateComplete;
+
+            const pill = table.shadowRoot?.querySelector(".lit-pill");
+            expect(pill).toBeTruthy();
+            expect(pill?.textContent).toBe("ADMIN");
+            expect(pill?.getAttribute("data-id")).toBe("usr_42");
 
             document.body.removeChild(table);
         });
