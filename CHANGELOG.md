@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/collidor/ui/compare/v1.1.0...v2.0.0) (2026-11-23)
+
+
+* feat!: standardize v2 event system, Light DOM forms, roving chip-group, and docs overhaul ([5dff25e](https://github.com/collidor/ui/commit/5dff25e45ef9a5ecb94d6c5b082326554b69a221))
+
+
+### BREAKING CHANGES
+
+* Component custom events are standardized on `ui-*` names (e.g. `ui-change`, `ui-input`, `ui-sort`, `ui-page-change`, `ui-page-request`, `ui-row-click`, `ui-item-click`, `ui-open`, `ui-close`, `ui-dismiss`, `ui-form-change`, `ui-form-submit`, `ui-form-invalid`, `ui-form-loading`, `ui-form-step-error`) and `<ui-struct-form>` / `<ui-field>` now render in the Light DOM rather than Shadow DOM.
+
 # [1.1.0](https://github.com/collidor/ui/compare/v1.0.5...v1.1.0) (2026-11-12)
 
 
