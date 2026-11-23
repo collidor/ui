@@ -8,6 +8,7 @@
 // ── Bootstrap the component library ────────────────────────────────────────
 import '@collidor/ui'
 import { announceLive } from '@collidor/ui'
+import { buildApiExample } from './api-examples.js'
 
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -21,38 +22,129 @@ function esc(str) {
     .replace(/"/g, '&quot;')
 }
 
-/** Syntax-highlight a raw HTML string for display.
- *
- * Uses null-byte placeholders so the <span> tags inserted by one pass are
- * invisible to subsequent passes and cannot be corrupted by them.
- */
-function highlight(raw) {
-  let s = esc(raw)
+function span(cls, rawText) {
+  return `<span class="${cls}">${esc(rawText)}</span>`
+}
 
-  // Collect rendered spans; reference them by index via \x00N\x00 placeholders.
-  const parts = []
-  function wrap(cls, text) {
-    const idx = parts.length
-    parts.push(`<span class="${cls}">${text}</span>`)
-    return `\x00${idx}\x00`
+/** Single-pass TypeScript / JavaScript syntax highlighter */
+function highlightJS(raw) {
+  const tokenRe =
+    /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|\b(import|export|from|type|interface|const|let|var|function|async|await|return|if|else|for|of|in|new|as|typeof|extends|class|true|false|null|undefined|void|readonly|default)\b|\b([A-Z][A-Z0-9_]{2,}|[A-Z][a-zA-Z0-9_]*)\b|\b(\d+(?:\.\d+)?)\b|\b([a-z_$][\w$]*)(?=\s*\()|\b([a-zA-Z_$][\w$]*)(?=\??\s*:)/g
+
+  let out = ''
+  let last = 0
+  for (const m of raw.matchAll(tokenRe)) {
+    const idx = m.index
+    if (idx > last) out += esc(raw.slice(last, idx))
+    const [full, comment, str, kw, typeOrConst, num, fn, prop] = m
+    if (comment) out += span('comment', comment)
+    else if (str) out += span('str', str)
+    else if (kw) out += span('kw', kw)
+    else if (typeOrConst) out += span('type', typeOrConst)
+    else if (num) out += span('num', num)
+    else if (fn) out += span('fn', fn)
+    else if (prop) out += span('prop', prop)
+    else out += esc(full)
+    last = idx + full.length
   }
+  if (last < raw.length) out += esc(raw.slice(last))
+  return out
+}
 
-  // 1. Tag names: &lt;tag-name  or  &lt;/tag-name
-  s = s.replace(/(&lt;\/?)([\w-]+)/g, (_, lt, name) => lt + wrap('tag', name))
+/** Single-pass CSS syntax highlighter */
+function highlightCSS(raw) {
+  const tokenRe =
+    /(\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(@[a-zA-Z-]+)|(--[a-zA-Z0-9-]+)|(#(?:[0-9a-fA-F]{3,8})\b|\b\d+(?:\.\d+)?(?:%|(?:px|rem|em|ms|s|deg|vh|vw|fr)\b)?)|\b([a-zA-Z-]+)(?=\()|(:root|:host|::?[a-zA-Z-]+|\.[a-zA-Z_-][\w-]*)|([a-z-]+)(?=\s*:(?!:|\s*[a-z-]+\s*[\{,]))/g
 
-  // 2. Attribute names — only when followed by =&quot; (escaped quote), so
-  //    the literal class= inside our <span class="…"> won't match.
-  s = s.replace(/([\w-]+)(?==&quot;)/g, (_, attr) => wrap('attr', attr))
+  let out = ''
+  let last = 0
+  for (const m of raw.matchAll(tokenRe)) {
+    const idx = m.index
+    if (idx > last) out += esc(raw.slice(last, idx))
+    const [full, comment, str, atRule, customProp, num, fn, sel, prop] = m
+    if (comment) out += span('comment', comment)
+    else if (str) out += span('str', str)
+    else if (atRule) out += span('kw', atRule)
+    else if (customProp) out += span('attr', customProp)
+    else if (num) out += span('num', num)
+    else if (fn) out += span('fn', fn)
+    else if (sel) out += span('tag', sel)
+    else if (prop) out += span('prop', prop)
+    else out += esc(full)
+    last = idx + full.length
+  }
+  if (last < raw.length) out += esc(raw.slice(last))
+  return out
+}
 
-  // 3. Quoted values: &quot;…&quot; (placeholders are \x00 chars, skipped safely)
-  s = s.replace(/(&quot;[^<\x00]*?&quot;)/g, (_, str) => wrap('str', str))
+function highlightHtmlAttrs(attrText) {
+  const attrRe = /([\w:-]+)(\s*=\s*)("[^"]*"|'[^']*')|([\w:-]+)/g
+  let out = ''
+  let last = 0
+  for (const m of attrText.matchAll(attrRe)) {
+    const idx = m.index
+    if (idx > last) out += esc(attrText.slice(last, idx))
+    const [full, name, eq, val, boolAttr] = m
+    if (name) out += span('attr', name) + esc(eq) + span('str', val)
+    else if (boolAttr) out += span('attr', boolAttr)
+    else out += esc(full)
+    last = idx + full.length
+  }
+  if (last < attrText.length) out += esc(attrText.slice(last))
+  return out
+}
 
-  // 4. HTML comments
-  s = s.replace(/(&lt;!--)([\s\S]*?)(--&gt;)/g, (_, open, content, close) =>
-    open + wrap('comment', content) + close)
+/** Single-pass HTML highlighter (delegates embedded <script> and <style> blocks) */
+function highlightHTML(raw) {
+  const tokenRe =
+    /(<!--[\s\S]*?-->)|(<script\b[^>]*>)([\s\S]*?)(<\/script>)|(<style\b[^>]*>)([\s\S]*?)(<\/style>)|(<\/?)([\w-]+)((?:"[^"]*"|'[^']*'|[^>"'])*)(\/?>)/gi
 
-  // Restore all placeholders in one final pass
-  return s.replace(/\x00(\d+)\x00/g, (_, i) => parts[+i])
+  let out = ''
+  let last = 0
+  for (const m of raw.matchAll(tokenRe)) {
+    const idx = m.index
+    if (idx > last) out += esc(raw.slice(last, idx))
+    const [
+      full,
+      comment,
+      scriptOpen,
+      scriptBody,
+      scriptClose,
+      styleOpen,
+      styleBody,
+      styleClose,
+      tagOpen,
+      tagName,
+      tagAttrs,
+      tagClose,
+    ] = m
+    if (comment) {
+      out += span('comment', comment)
+    } else if (scriptOpen) {
+      out += highlightHTML(scriptOpen) + highlightJS(scriptBody) + highlightHTML(scriptClose)
+    } else if (styleOpen) {
+      out += highlightHTML(styleOpen) + highlightCSS(styleBody) + highlightHTML(styleClose)
+    } else if (tagOpen) {
+      out += esc(tagOpen) + span('tag', tagName) + highlightHtmlAttrs(tagAttrs) + esc(tagClose)
+    } else {
+      out += esc(full)
+    }
+    last = idx + full.length
+  }
+  if (last < raw.length) out += esc(raw.slice(last))
+  return out
+}
+
+/** Syntax-highlight a raw code snippet according to its language */
+function highlight(raw, lang = 'html') {
+  const normalized = String(lang || 'html').toLowerCase()
+  if (normalized === 'ts' || normalized === 'typescript' || normalized === 'js' || normalized === 'javascript') {
+    return highlightJS(raw)
+  }
+  if (normalized === 'css') {
+    return highlightCSS(raw)
+  }
+  return highlightHTML(raw)
 }
 
 /** Build a code block element with a copy button */
@@ -63,27 +155,31 @@ function codeBlock(raw, lang = 'html') {
   const header = document.createElement('div')
   header.className = 'code-block-header'
   header.innerHTML = `
-    <span class="code-lang">${lang}</span>
-    <button class="copy-btn" title="Copy to clipboard">Copy</button>
+    <span class="code-lang"><span class="lang-dot" aria-hidden="true"></span>${esc(lang)}</span>
+    <button type="button" class="copy-btn" title="Copy to clipboard">Copy</button>
   `
   wrapper.appendChild(header)
 
   const pre = document.createElement('pre')
   const code = document.createElement('code')
-  code.innerHTML = highlight(raw)
+  code.innerHTML = highlight(raw, lang)
   pre.appendChild(code)
   wrapper.appendChild(pre)
 
   header.querySelector('.copy-btn').addEventListener('click', (e) => {
-    navigator.clipboard.writeText(raw).then(() => {
-      const btn = e.currentTarget
-      btn.textContent = 'Copied!'
-      btn.classList.add('copied')
-      setTimeout(() => {
-        btn.textContent = 'Copy'
-        btn.classList.remove('copied')
-      }, 2000)
-    })
+    const btn = e.currentTarget
+    if (!navigator.clipboard?.writeText) return
+    navigator.clipboard
+      .writeText(raw)
+      .then(() => {
+        btn.textContent = 'Copied!'
+        btn.classList.add('copied')
+        setTimeout(() => {
+          btn.textContent = 'Copy'
+          btn.classList.remove('copied')
+        }, 2000)
+      })
+      .catch(() => {})
   })
 
   return wrapper
@@ -112,6 +208,8 @@ function demoBlock({ label = '', html: innerHtml, className = '', setup }) {
 
 /** Build a props table */
 function propsTable(rows) {
+  const wrap = document.createElement('div')
+  wrap.className = 'props-table-wrap'
   const table = document.createElement('table')
   table.className = 'props-table'
   table.innerHTML = `
@@ -128,20 +226,62 @@ function propsTable(rows) {
         .map(
           ([name, type, def, desc]) => `
         <tr>
-          <td class="prop-name">${name}</td>
-          <td class="prop-type">${type}</td>
-          <td class="prop-default">${def}</td>
-          <td class="prop-desc">${desc}</td>
+          <td class="prop-name">${esc(name)}</td>
+          <td class="prop-type">${esc(type)}</td>
+          <td class="prop-default">${esc(def)}</td>
+          <td class="prop-desc">${esc(desc)}</td>
         </tr>`,
         )
         .join('')}
     </tbody>
   `
-  return table
+  wrap.appendChild(table)
+  return wrap
 }
 
-/** Build a section container */
-function section({ id, title, tag, description, children }) {
+/** Build an events table */
+function eventsTable(rows) {
+  const wrap = document.createElement('div')
+  wrap.className = 'props-table-wrap'
+  const table = document.createElement('table')
+  table.className = 'props-table'
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Type</th>
+        <th>Detail</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows
+        .map(
+          ([name, type, detail, desc]) => `
+        <tr>
+          <td class="prop-name">${esc(name)}</td>
+          <td class="prop-type">${esc(type)}</td>
+          <td class="prop-default">${esc(detail)}</td>
+          <td class="prop-desc">${esc(desc)}</td>
+        </tr>`,
+        )
+        .join('')}
+    </tbody>
+  `
+  wrap.appendChild(table)
+  return wrap
+}
+
+function formatTagLabel(tag) {
+  if (tag.startsWith('ui-')) return `&lt;${esc(tag)}&gt;`
+  return esc(tag)
+}
+
+const API_SUBTITLE_RE =
+  /^(Properties|Events|CSS Modifier Classes|Modifiers|API Parameters|Supported Components)\b/i
+
+/** Build a section container with Examples | API tabs for components */
+function section({ id, title, tag, group, description, children }) {
   const el = document.createElement('section')
   el.className = 'doc-section'
   el.id = id
@@ -150,13 +290,77 @@ function section({ id, title, tag, description, children }) {
   el.innerHTML = `
     <div class="section-header">
       <h2 class="section-title">${title}</h2>
-      <code class="section-tag">${tag.startsWith('.') ? tag : `&lt;${tag}&gt;`}</code>
+      <code class="section-tag">${formatTagLabel(tag)}</code>
     </div>
     <p class="section-description">${description}</p>
   `
 
-  for (const child of children) {
-    if (child) el.appendChild(child)
+  const validChildren = children.filter(Boolean)
+
+  // Partition component sections into Examples and API tabs
+  if (group !== 'Foundation') {
+    const splitIdx = validChildren.findIndex(
+      (node) =>
+        node.classList?.contains('subsection-title') &&
+        API_SUBTITLE_RE.test(node.textContent.trim()),
+    )
+
+    const exampleNodes = splitIdx === -1 ? validChildren : validChildren.slice(0, splitIdx)
+    const apiNodes = splitIdx === -1 ? [] : validChildren.slice(splitIdx)
+    const liveApiNodes = buildApiExample(id, { codeBlock, subTitle, esc })
+    const allApiNodes = [...apiNodes, ...liveApiNodes]
+
+    if (allApiNodes.length > 0) {
+      const tabs = document.createElement('ui-tabs')
+      tabs.className = 'section-tabs'
+      tabs.value = 'examples'
+      tabs.setAttribute('aria-label', `${title} documentation`)
+
+      const examplesTab = document.createElement('ui-tab')
+      examplesTab.id = `${id}-tab-examples`
+      examplesTab.value = 'examples'
+      examplesTab.controls = `${id}-panel-examples`
+      examplesTab.textContent = 'Examples'
+
+      const apiTab = document.createElement('ui-tab')
+      apiTab.id = `${id}-tab-api`
+      apiTab.value = 'api'
+      apiTab.controls = `${id}-panel-api`
+      apiTab.textContent = 'API'
+
+      tabs.append(examplesTab, apiTab)
+
+      const examplesPanel = document.createElement('div')
+      examplesPanel.id = `${id}-panel-examples`
+      examplesPanel.className = 'section-tab-panel'
+      examplesPanel.setAttribute('role', 'tabpanel')
+      examplesPanel.setAttribute('aria-labelledby', examplesTab.id)
+      examplesPanel.setAttribute('data-panel', 'examples')
+      for (const child of exampleNodes) examplesPanel.appendChild(child)
+
+      const apiPanel = document.createElement('div')
+      apiPanel.id = `${id}-panel-api`
+      apiPanel.className = 'section-tab-panel'
+      apiPanel.setAttribute('role', 'tabpanel')
+      apiPanel.setAttribute('aria-labelledby', apiTab.id)
+      apiPanel.setAttribute('data-panel', 'api')
+      apiPanel.hidden = true
+      for (const child of allApiNodes) apiPanel.appendChild(child)
+
+      tabs.addEventListener('ui-change', (e) => {
+        e.stopPropagation()
+        const showApi = e.detail.value === 'api'
+        examplesPanel.hidden = showApi
+        apiPanel.hidden = !showApi
+      })
+
+      el.append(tabs, examplesPanel, apiPanel)
+      return el
+    }
+  }
+
+  for (const child of validChildren) {
+    el.appendChild(child)
   }
 
   return el
@@ -247,6 +451,11 @@ const SECTIONS = [
           ['icon-only', 'boolean', 'false', 'Square aspect-ratio — no text label'],
           ['type', 'string', "''", 'Native button type (submit / reset / button)'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['click', 'MouseEvent', 'native', 'Standard click event; automatically suppressed while disabled or loading'],
+        ]),
       ]
     },
   },
@@ -329,6 +538,11 @@ const SECTIONS = [
           ['icon', 'string', 'auto', 'Override the default icon character'],
           ['closable', 'boolean', 'false', 'Renders a dismiss × button'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-dismiss', 'UIAlertDismissEvent', '{}', 'Fired when the alert is dismissed via button or dismiss()'],
+        ]),
       ]
     },
   },
@@ -383,6 +597,12 @@ const SECTIONS = [
           ['readonly', 'boolean', 'false', 'Makes the input read-only'],
           ['clearable', 'boolean', 'false', 'Shows a × clear button when value is non-empty'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-input', 'UIInputEvent', '{ value: string }', 'Fired on every keystroke or clear action'],
+          ['ui-change', 'UIInputChangeEvent', '{ value: string }', 'Fired when the value is committed or cleared'],
+        ]),
       ]
     },
   },
@@ -416,6 +636,11 @@ const SECTIONS = [
           ['label', 'string', "''", 'Text label (also accepted via default slot)'],
           ['disabled', 'boolean', 'false', 'Disables interaction'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-change', 'UISwitchChangeEvent', '{ checked: boolean }', 'Fired when toggled by click, keyboard, or toggle()'],
+        ]),
       ]
     },
   },
@@ -427,7 +652,7 @@ const SECTIONS = [
     tag: 'ui-chip',
     group: 'Display',
     description:
-      'Compact selectable tags with optional icon, avatar, and close button. Group them with <ui-chip-group>.',
+      'Compact selectable or closable tags with optional icon and avatar. Inside <code>&lt;ui-chip-group&gt;</code>, interactive chips use roving tabindex (single Tab stop, Arrow/Home/End navigation, Space/Enter toggle, Delete/Backspace dismiss).',
     build() {
       return [
         demoBlock({
@@ -467,6 +692,12 @@ const SECTIONS = [
           ['closable', 'boolean', 'false', 'Shows a × remove button'],
           ['icon', 'string', "''", 'Emoji / character icon prepended to label'],
           ['avatar', 'string', "''", 'URL for a circular avatar image'],
+        ]),
+
+        subTitle('Events — ui-chip / ui-chip-group'),
+        eventsTable([
+          ['ui-select', 'UIChipSelectEvent', '{ value: string; selected: boolean }', 'Fired when a selectable chip is toggled'],
+          ['ui-dismiss', 'UIChipDismissEvent', '{ value: string }', 'Fired when a closable chip is removed'],
         ]),
       ]
     },
@@ -525,6 +756,11 @@ const SECTIONS = [
           ['striped', 'boolean', 'false', 'Diagonal stripe pattern on fill'],
           ['animated', 'boolean', 'false', 'Animates the stripes (requires striped)'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed: boolean }', 'Fired when a collapsible progress header is toggled'],
+        ]),
       ]
     },
   },
@@ -536,7 +772,7 @@ const SECTIONS = [
     tag: 'ui-tabs',
     group: 'Navigation',
     description:
-      'Tab strip (<ui-tabs>) hosting individual tab items (<ui-tab>). Emits ui-change with the new value on selection.',
+      'Tab strip (<code>&lt;ui-tabs&gt;</code>) hosting individual tab items (<code>&lt;ui-tab&gt;</code>). Emits <code>ui-change</code> with the new value on selection.',
     build() {
       return [
         demoBlock({
@@ -558,7 +794,7 @@ const SECTIONS = [
             const tabs = preview.querySelector('#demo-tabs')
             const content = preview.querySelector('#demo-tab-content')
             tabs.addEventListener('ui-change', (e) => {
-              content.innerHTML = `Showing: <strong>${e.detail.value}</strong>`
+              content.innerHTML = `Showing: <strong>${esc(String(e.detail.value ?? ''))}</strong>`
             })
           },
         }),
@@ -579,6 +815,11 @@ const SECTIONS = [
           ['value', 'string', "''", 'Unique identifier for this tab'],
           ['active', 'boolean', 'false', 'Managed by ui-tabs; do not set manually'],
           ['disabled', 'boolean', 'false', 'Prevents selection'],
+        ]),
+
+        subTitle('Events — ui-tabs'),
+        eventsTable([
+          ['ui-change', 'UITabsChangeEvent', '{ value: string }', 'Fired when the active tab changes via click or arrow keys'],
         ]),
       ]
     },
@@ -633,6 +874,11 @@ const SECTIONS = [
           ['icon', 'string', "''", 'Emoji/character displayed before the title'],
           ['disabled', 'boolean', 'false', 'Prevents toggling'],
         ]),
+
+        subTitle('Events — ui-accordion / ui-accordion-item'),
+        eventsTable([
+          ['ui-toggle', 'UIAccordionToggleEvent', '{ item: UIAccordionItem; open: boolean }', 'Fired when an accordion item is expanded or collapsed'],
+        ]),
       ]
     },
   },
@@ -685,6 +931,11 @@ const SECTIONS = [
           ['collapsed', 'boolean', 'false', 'Initial collapsed state (when collapsible)'],
           ['header-surface', 'string', "''", "One of 'flat'|'raised'|'sunken'|'banner'|'accent'"],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed: boolean }', 'Fired when a collapsible card is collapsed or expanded'],
+        ]),
       ]
     },
   },
@@ -695,7 +946,7 @@ const SECTIONS = [
     title: 'Breadcrumbs',
     tag: '.ui-breadcrumbs',
     group: 'Navigation',
-    description: 'Semantic, accessible breadcrumb trail powered by standard <nav> and pure CSS separators.',
+    description: 'Semantic, accessible breadcrumb trail powered by standard <code>&lt;nav&gt;</code> and pure CSS separators.',
     build() {
       return [
         demoBlock({
@@ -718,6 +969,12 @@ const SECTIONS = [
     <li><span aria-current="page">Components</span></li>
   </ol>
 </nav>`),
+
+        subTitle('CSS Modifier Classes'),
+        propsTable([
+          ['.ui-breadcrumbs', 'Base class', '—', 'Horizontal breadcrumb list with automatic "/" separators'],
+          ['[aria-current="page"]', 'Attribute', '—', 'Highlights the current page item'],
+        ]),
       ]
     },
   },
@@ -884,7 +1141,7 @@ const SECTIONS = [
     tag: 'ui-table',
     group: 'Data',
     description:
-      'Full-featured data table with sorting, striped rows, hover highlighting, column borders, and built-in pagination. Data and columns are passed as JSON attributes.',
+      'Generic data table (<code>UITable&lt;T&gt;</code>) with client or remote sorting &amp; pagination, row selection, column customization, virtualization, and strongly-typed events.',
     build() {
       // ── Fake dataset ─────────────────────────────────────────────────────
       const ALL_ROWS = [
@@ -955,87 +1212,64 @@ const SECTIONS = [
       }
 
       // ── Client-side ────────────────────────────────────────────────────────
-      // Pass the full sorted dataset as table.data — do NOT set table.total.
-      // The component derives total = data.length, so pages = ceil(data.length / pageSize).
-      // This guarantees page buttons never exceed the actual number of rows.
+      // Pass the full dataset as table.data — do NOT set table.total.
+      // The component sorts and paginates internally and emits ui-sort / ui-page-change.
       function setupClientTable(preview, id, rows) {
         const table = preview.querySelector(`#${id}`)
-        let sortBy = ''
-        let sortDir = null
-
-        function sorted() {
-          if (!sortBy) return rows
-          return [...rows].sort((a, b) => {
-            const av = a[sortBy], bv = b[sortBy]
-            const an = parseFloat(av), bn = parseFloat(bv)
-            const cmp = isNaN(an) || isNaN(bn)
-              ? String(av).localeCompare(String(bv))
-              : an - bn
-            return sortDir === 'desc' ? -cmp : cmp
-          })
-        }
-
-        // Assign all rows — component handles the slice internally
-        function render() {
-          table.data = sorted()
-          // No table.total — falls back to data.length automatically
-        }
-
-        render()
-
-        table.addEventListener('ui-table-sort', (e) => {
-          sortBy = e.detail.sortBy
-          sortDir = e.detail.sortDirection
-          table.page = 1
-          render()
-        })
+        table.pageSizeOptions = [5, 8, 10, 25]
+        table.data = rows
       }
 
       // ── Async / remote ─────────────────────────────────────────────────────
       // Simulates a server: each page fires a "fetch" (300ms), returns a slice.
-      // table.total is set to the full server count so page buttons = ceil(total / pageSize).
-      // table.data is only the current page slice — the component does NOT know
-      // about other pages, so total must be explicit here.
+      // table.remote = true delegates sorting/paging to ui-page-request, and
+      // e.detail.resolve({ data, total }) updates the table and clears loading.
+      function parseSortableValue(v) {
+        if (typeof v === 'number') return v
+        if (typeof v === 'string') {
+          const frac = /^(\d+)\/(\d+)$/.exec(v.trim())
+          if (frac) return Number(frac[1]) / Number(frac[2])
+          const num = Number(v)
+          if (!Number.isNaN(num) && v.trim() !== '') return num
+        }
+        return null
+      }
+
       function setupAsyncTable(preview, id, rows) {
         const table = preview.querySelector(`#${id}`)
         const SERVER_TOTAL = rows.length
-        let sortBy = ''
-        let sortDir = null
+        table.pageSizeOptions = [5, 8, 10, 25]
+        table.remote = true
 
-        function sorted() {
-          if (!sortBy) return rows
+        function sorted(sortBy, sortDir) {
+          if (!sortBy || !sortDir) return rows
           return [...rows].sort((a, b) => {
             const av = a[sortBy], bv = b[sortBy]
-            const an = parseFloat(av), bn = parseFloat(bv)
-            const cmp = isNaN(an) || isNaN(bn)
+            const an = parseSortableValue(av), bn = parseSortableValue(bv)
+            const cmp = an === null || bn === null
               ? String(av).localeCompare(String(bv))
               : an - bn
             return sortDir === 'desc' ? -cmp : cmp
           })
         }
 
-        function fetchPage(page) {
+        let pendingTimer = null
+        table.addEventListener('ui-page-request', (e) => {
+          if (pendingTimer) clearTimeout(pendingTimer)
+          const { page, pageSize, sortBy, sortDirection, resolve } = e.detail
           table.loading = true
-          setTimeout(() => {
-            const all = sorted()
-            const start = (page - 1) * PAGE_SIZE
-            // Set total BEFORE data — ensures page count uses SERVER_TOTAL
-            // pages = ceil(SERVER_TOTAL / PAGE_SIZE), never more than actual data
-            table.total = SERVER_TOTAL
-            table.data  = all.slice(start, start + PAGE_SIZE)
-            table.page  = page
-            table.loading = false
+          pendingTimer = setTimeout(() => {
+            pendingTimer = null
+            const all = sorted(sortBy, sortDirection)
+            const start = (page - 1) * pageSize
+            resolve({
+              data: all.slice(start, start + pageSize),
+              total: SERVER_TOTAL,
+            })
           }, 300)
-        }
-
-        fetchPage(1)
-
-        table.addEventListener('ui-table-page', (e) => fetchPage(e.detail.page))
-        table.addEventListener('ui-table-sort', (e) => {
-          sortBy = e.detail.sortBy
-          sortDir = e.detail.sortDirection
-          fetchPage(1)
         })
+
+        table.getPage({ page: 1 })
       }
 
       return [
@@ -1060,43 +1294,47 @@ const SECTIONS = [
           setup(preview) { setupClientTable(preview, 'demo-table-3', ALL_ROWS) },
         }),
 
-        codeBlock(`<!-- CLIENT-SIDE: pass all rows, no total needed -->
+        codeBlock(`<!-- CLIENT-SIDE: pass all rows, component sorts & paginates internally -->
 <ui-table row-key="id" columns='[...]' striped hoverable pagination page-size="8"></ui-table>
 <script>
   const table = document.querySelector('ui-table')
-  table.data = allRows       // full dataset — component slices internally
-  // pages = ceil(data.length / pageSize), never overflows
+  table.data = allRows       // full dataset — component sorts & slices internally
 
-  table.addEventListener('ui-table-sort', e => {
-    table.data = sortRows(allRows, e.detail.sortBy, e.detail.sortDirection)
-    table.page = 1
+  table.addEventListener('ui-sort', (e) => {
+    console.log(e.detail.sortBy, e.detail.sortDirection)
+  })
+  table.addEventListener('ui-row-click', (e) => {
+    console.log(e.detail.row, e.detail.key, e.detail.selected)
   })
 <\/script>
 
-<!-- ASYNC / REMOTE: set total explicitly, pass only current page slice -->
+<!-- ASYNC / REMOTE: set remote, handle unified ui-page-request -->
+<ui-table remote pagination page-size="8"></ui-table>
 <script>
-  async function fetchPage(page) {
+  table.addEventListener('ui-page-request', async (e) => {
+    const { page, pageSize, sortBy, sortDirection, resolve } = e.detail
     table.loading = true
-    const res = await api.getMonsters({ page, pageSize: 8, sortBy, sortDir })
-    table.total = res.total   // server count — drives page button count
-    table.data  = res.rows    // current page slice only
-    table.page  = page
-    table.loading = false
-  }
-
-  table.addEventListener('ui-table-page', e => fetchPage(e.detail.page))
-  table.addEventListener('ui-table-sort', e => { /* update sort, fetchPage(1) */ })
+    const res = await api.getMonsters({ page, pageSize, sortBy, sortDirection })
+    resolve({ data: res.rows, total: res.total })
+  })
+  table.getPage({ page: 1 })
 <\/script>`),
 
         subTitle('Properties'),
         propsTable([
-          ['data',          'T[]',                 '[]',    'Row data — set via JS property. Pass full array (client) or current page slice (async)'],
-          ['columns',       'TableColumn[]',       '[]',    'Column defs: { key, label, sortable?, align?, width? }'],
+          ['data',          'T[]',                 '[]',    'Row data — pass full array (client) or current page slice (remote)'],
+          ['columns',       'TableColumn<T>[]',    '[]',    'Column defs: { key, label?, sortable?, align?, width?, formatter? }'],
           ['row-key',       'string',              "'id'",  'Unique key field per row'],
           ['pagination',    'boolean',             'false', 'Show footer pagination bar'],
-          ['page',          'number',              '1',     'Current page (reflected as attribute)'],
+          ['page',          'number',              '1',     'Current page (1-indexed)'],
           ['page-size',     'number',              '10',    'Rows per page'],
-          ['total',         'number',              'data.length', 'Override total for async — drives page count. Omit for client-side'],
+          ['total',         'number',              'data.length', 'Total row count for remote paging — omit for client-side'],
+          ['remote',        'boolean',             'false', 'Delegates sorting, paging, and infinite scroll to ui-page-request'],
+          ['fetchPage',     '(params: TablePageRequestParams) => Promise<{ data: T[]; total?: number }> | void', 'undefined', 'Optional async page loader invoked alongside ui-page-request'],
+          ['selectable',    'boolean',             'false', 'Enables row selection checkboxes'],
+          ['selection-mode',"'single'|'multiple'", "'multiple'", 'Single or multi-row selection'],
+          ['column-customization', 'boolean',      'false', 'Shows column visibility & reorder popover in the header bar'],
+          ['virtual',       'boolean | VirtualScrollConfig', 'false', 'Enables windowed virtual scrolling for large datasets'],
           ['striped',       'boolean',             'false', 'Alternating row background'],
           ['hoverable',     'boolean',             'false', 'Highlight row on hover'],
           ['bordered',      'boolean',             'false', 'Column separator borders'],
@@ -1105,6 +1343,80 @@ const SECTIONS = [
           ['sort-direction','null|"asc"|"desc"',   'null',  'Sort direction'],
           ['loading',       'boolean',             'false', 'Loading overlay spinner'],
           ['empty-text',    'string',              "'No data available'", 'Empty state message'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-sort', 'UITableSortEvent<T>', '{ sortBy, sortDirection, data }', 'Fired when a sortable header is activated or sort() is called'],
+          ['ui-page-change', 'UITablePageChangeEvent', '{ page, pageSize, totalPages, total }', 'Fired when the active page changes'],
+          ['ui-page-size-change', 'UITablePageSizeChangeEvent', '{ page, pageSize, totalPages, total }', 'Fired when rows per page changes (resets page to 1)'],
+          ['ui-page-request', 'UITablePageRequestEvent<T>', '{ page, pageSize, sortBy, sortDirection, reason, append, resolve }', 'Fired when remote/fetchPage is enabled (or getPage() is called). Call resolve({ data, total }) to update or append rows'],
+          ['ui-selection-change', 'UITableSelectionChangeEvent<T>', '{ selectedKeys, selectedRows, row?, index? }', 'Fired when row selection changes'],
+          ['ui-row-click', 'UITableRowClickEvent<T>', '{ row, index, key, selected }', 'Fired when a row is clicked (ignores clicks inside nested buttons/links/inputs)'],
+          ['ui-columns-change', 'UITableColumnsChangeEvent<T>', '{ columns }', 'Fired when columns are shown, hidden, reordered, or reset'],
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed }', 'Fired when a collapsible table header is toggled'],
+        ]),
+      ]
+    },
+  },
+
+  // ── Events & Types ────────────────────────────────────────────────────────
+  {
+    id: 'events',
+    title: 'Events & Types',
+    tag: 'UI_EVENTS',
+    group: 'Foundation',
+    description:
+      'All public component events follow a strict ui-* convention, bubble and cross Shadow DOM (bubbles, composed, cancelable), and ship with exported TypeScript detail types, CustomEvent aliases, UI_EVENTS constants, and typed addEventListener overloads.',
+    build() {
+      return [
+        subTitle('Typed Listeners & Generic Components'),
+        codeBlock(`import {
+  UI_EVENTS,
+  type UITable,
+  type UIList,
+  type UICombobox,
+  type UIStructForm,
+} from '@collidor/ui'
+
+interface User {
+  id: string
+  name: string
+  role: string
+}
+
+// Generic components infer event payloads automatically — no casts needed
+const table = document.querySelector('ui-table') as UITable<User>
+
+table.addEventListener(UI_EVENTS.ROW_CLICK, (e) => {
+  console.log(e.detail.row.name, e.detail.key, e.detail.selected)
+})
+
+table.addEventListener(UI_EVENTS.PAGE_REQUEST, async (e) => {
+  const { page, pageSize, sortBy, sortDirection, reason, append, resolve } = e.detail
+  table.loading = true
+  const res = await fetchUsers({ page, pageSize, sortBy, sortDirection })
+  // Replaces rows on page/sort/page-size, appends rows on infinite scroll (append: true)
+  resolve({ data: res.items, total: res.total })
+})`, 'ts'),
+
+        subTitle('Standard Event Vocabulary (UI_EVENTS)'),
+        eventsTable([
+          ['ui-input', 'UI_EVENTS.INPUT', '{ value }', 'Live edit on ui-input, ui-number-input, ui-slider'],
+          ['ui-change', 'UI_EVENTS.CHANGE', '{ value } / { checked } / { activeStep } / { value, selectedOptions }', 'Committed value change on inputs, selects, switch, tabs, stepper, segmented control, combobox'],
+          ['ui-create', 'UI_EVENTS.CREATE', '{ value, label }', 'New option created in a creatable ui-combobox'],
+          ['ui-open / ui-close', 'UI_EVENTS.OPEN / CLOSE', '{ presentation } / { placement } / { x, y } / {}', 'Unified overlay lifecycle across ui-dialog, ui-drawer, ui-popover, ui-menu, ui-context-menu'],
+          ['ui-dismiss', 'UI_EVENTS.DISMISS', '{} / { value }', 'Dismissal on ui-alert, ui-toast, and closable ui-chip'],
+          ['ui-select', 'UI_EVENTS.SELECT', '{ value, item } / { value, selected }', 'Selection on ui-menu, ui-context-menu, and selectable ui-chip'],
+          ['ui-toggle', 'UI_EVENTS.TOGGLE', '{ item, open }', 'Disclosure toggle on ui-accordion-item / ui-accordion'],
+          ['ui-collapse-change', 'UI_EVENTS.COLLAPSE_CHANGE', '{ collapsed }', 'Collapsible header toggle on UIHeaderedElement (ui-card, ui-table, ui-list, ui-dialog, ui-drawer, ui-progress)'],
+          ['ui-sort', 'UI_EVENTS.SORT', '{ sortBy, sortDirection, data }', 'Sort change on ui-table and ui-list'],
+          ['ui-page-change / ui-page-size-change', 'UI_EVENTS.PAGE_CHANGE / PAGE_SIZE_CHANGE', '{ page, pageSize, totalPages, total }', 'Pagination state updates on ui-pagination, ui-table, and ui-list'],
+          ['ui-page-request', 'UI_EVENTS.PAGE_REQUEST', '{ page, pageSize, ..., reason, append, resolve }', 'Unified remote data request on ui-table, ui-list, and ui-combobox'],
+          ['ui-selection-change', 'UI_EVENTS.SELECTION_CHANGE', '{ selectedKeys, selectedRows | selectedItems, ... }', 'Row/item selection change on ui-table and ui-list'],
+          ['ui-row-click / ui-item-click', 'UI_EVENTS.ROW_CLICK / ITEM_CLICK', '{ row | item, index, key, selected }', 'Row or item activation on ui-table and ui-list'],
+          ['ui-columns-change', 'UI_EVENTS.COLUMNS_CHANGE', '{ columns }', 'Column visibility or order update on ui-table'],
+          ['ui-form-*', 'UI_EVENTS.FORM_*', 'change / submit / invalid / loading / step-error', 'Structured form lifecycle events on ui-struct-form'],
         ]),
       ]
     },
@@ -1302,6 +1614,11 @@ const SECTIONS = [
           ['ui-table', 'Component', "'flat'", 'Data table title header'],
           ['ui-progress', 'Component', "'flat'", 'Progress header surface'],
         ]),
+
+        subTitle('Events (UIHeaderedElement)'),
+        eventsTable([
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed: boolean }', 'Fired when any collapsible headered surface is toggled'],
+        ]),
       ]
     },
   },
@@ -1367,7 +1684,12 @@ const SECTIONS = [
         propsTable([
           ['value', 'string', "''", 'Currently selected segment value'],
           ['size', "'sm'|'md'|'lg'", "'md'", 'Size of the segmented control'],
-          ['disabled', 'boolean', 'false', 'Disables entire control'],
+          ['full-width', 'boolean', 'false', 'Stretches control across container width'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-change', 'UISegmentedControlChangeEvent', '{ value: string }', 'Fired when the selected segment changes'],
         ]),
       ]
     },
@@ -1433,6 +1755,80 @@ const SECTIONS = [
           ['invalid', 'boolean', 'false', 'Applies error border and outline'],
           ['required', 'boolean', 'false', 'Marks field as required'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-change', 'UISelectChangeEvent', '{ value: string }', 'Fired when the selected option changes'],
+        ]),
+      ]
+    },
+  },
+
+  // ── Combobox ──────────────────────────────────────────────────────────────
+  {
+    id: 'combobox',
+    title: 'Combobox',
+    tag: 'ui-combobox',
+    group: 'Forms',
+    description:
+      'Generic searchable select &amp; tag combobox (<code>UICombobox&lt;O&gt;</code>) supporting multi-select chips, creatable options, virtual scrolling, and remote search/infinite-scroll paging.',
+    build() {
+      return [
+        subTitle('Searchable Multi-Select & Creatable'),
+        demoBlock({
+          label: 'Type to filter, select multiple tags, or create a new tag',
+          html: `
+            <div style="max-width: 380px;">
+              <ui-combobox id="demo-combobox" multiple creatable placeholder="Select or create tags…"></ui-combobox>
+              <div id="demo-combobox-log" style="margin-top: 8px; font-size: 0.8rem; color: var(--docs-text-muted);">Selected: []</div>
+            </div>
+          `,
+          setup(preview) {
+            const combo = preview.querySelector('#demo-combobox')
+            const log = preview.querySelector('#demo-combobox-log')
+            combo.options = [
+              { value: 'ts', label: 'TypeScript', description: 'Typed JavaScript' },
+              { value: 'lit', label: 'Lit', description: 'Fast Web Components' },
+              { value: 'oklch', label: 'OKLCH', description: 'Perceptual colour space' },
+              { value: 'a11y', label: 'Accessibility', description: 'WCAG AAA contrast & ARIA' },
+            ]
+            combo.addEventListener('ui-change', (e) => {
+              log.textContent = `Selected: ${JSON.stringify(e.detail.value)}`
+            })
+          },
+        }),
+        codeBlock(`const combo = document.querySelector('ui-combobox')
+combo.options = [
+  { value: 'us-east', label: 'US East' },
+  { value: 'eu-west', label: 'EU West' },
+]
+combo.addEventListener('ui-change', (e) => {
+  console.log(e.detail.value, e.detail.selectedOptions)
+})
+combo.addEventListener('ui-page-request', async (e) => {
+  const { page, search, append, resolve } = e.detail
+  const res = await fetchOptions({ page, search })
+  resolve({ options: res.options, total: res.total })
+})`, 'ts'),
+
+        subTitle('Properties'),
+        propsTable([
+          ['options', 'O[]', '[]', 'Array of option objects ({ value, label, description?, disabled? })'],
+          ['value', "O['value'] | O['value'][] | ''", "''", 'Selected value or array of values (in multiple mode)'],
+          ['multiple', 'boolean', 'false', 'Enables multi-select chip tags'],
+          ['searchable', 'boolean', 'true', 'Allows filtering options by typing'],
+          ['creatable', 'boolean', 'false', 'Allows creating a new option when no exact match exists'],
+          ['remote', 'boolean', 'false', 'Emits debounced ui-page-request on search and scroll'],
+          ['virtual', 'boolean | ComboboxVirtualConfig', 'false', 'Windowed virtual list for large option sets'],
+          ['debounce-ms', 'number', '250', 'Debounce delay in ms for remote search'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-change', 'UIComboboxChangeEvent<O>', '{ value, selectedOptions }', 'Fired when selection changes'],
+          ['ui-create', 'UIComboboxCreateEvent', '{ value, label }', 'Fired when a new option is created in creatable mode'],
+          ['ui-page-request', 'UIComboboxPageRequestEvent<O>', '{ page, pageSize, search, reason, append, resolve }', 'Fired on remote search or dropdown infinite scroll; call resolve({ options, total })'],
+        ]),
       ]
     },
   },
@@ -1490,6 +1886,12 @@ const SECTIONS = [
           ['size', "'sm'|'md'|'lg'", "'md'", 'Size of input and buttons'],
           ['disabled', 'boolean', 'false', 'Disables interaction'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-input', 'UINumberInputEvent', '{ value: number }', 'Fired while typing or stepping'],
+          ['ui-change', 'UINumberInputChangeEvent', '{ value: number }', 'Fired when committed or stepped'],
+        ]),
       ]
     },
   },
@@ -1537,6 +1939,12 @@ const SECTIONS = [
           ['show-value', 'boolean', 'false', 'Displays current value badge alongside track'],
           ['disabled', 'boolean', 'false', 'Disables slider interaction'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-input', 'UISliderInputEvent', '{ value: number }', 'Fired continuously while dragging the thumb'],
+          ['ui-change', 'UISliderChangeEvent', '{ value: number }', 'Fired when the slider value is committed'],
+        ]),
       ]
     },
   },
@@ -1548,7 +1956,7 @@ const SECTIONS = [
     tag: 'ui-field',
     group: 'Forms',
     description:
-      'Layout wrapper providing accessible label, optional/required asterisk, helper text, and error validation messages for inputs.',
+      'Light DOM layout wrapper providing accessible <code>&lt;label&gt;</code>, required indicator, helper text, and error validation linked via native <code>aria-describedby</code>.',
     build() {
       return [
         subTitle('Standard Field'),
@@ -1597,7 +2005,7 @@ const SECTIONS = [
     tag: 'ui-struct-form',
     group: 'Forms',
     description:
-      'Dynamic schema-driven form generator that automatically renders appropriate Collidor UI controls from field definitions.',
+      'Dynamic schema-driven form generator rendered in Light DOM for direct visibility, styling, and accessibility, automatically composing Collidor UI controls from field definitions.',
     build() {
       return [
         subTitle('Dynamic Form Generation'),
@@ -1633,15 +2041,24 @@ form.fields = [
   { key: 'replicas', label: 'Replicas', widget: 'number', defaultValue: 3 },
   { key: 'autoScale', label: 'Auto-Scaling', widget: 'switch', defaultValue: true },
 ]
-form.addEventListener('ui-form-submit', (e) => console.log(e.detail.values))`),
+form.addEventListener('ui-form-submit', (e) => console.log(e.detail.values))`, 'js'),
 
         subTitle('Properties'),
         propsTable([
           ['fields', 'StructFormField[]', '[]', 'Array of field descriptors defining keys, labels, widgets'],
-          ['values', 'Record<string, any>', '{}', 'Initial or controlled form values'],
+          ['values', 'TValues', '{}', 'Initial or controlled form values (generic via UIStructForm<TValues>)'],
           ['submit-label', 'string', "'Submit'", 'Text on the submit button'],
           ['bordered', 'boolean', 'false', 'Adds an outer container border'],
           ['dense', 'boolean', 'false', 'Compact spacing between form rows'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-form-change', 'UIStructFormChangeEvent<TValues>', '{ values, fieldKey, fieldValue }', 'Fired whenever any field value changes'],
+          ['ui-form-submit', 'UIStructFormSubmitEvent<TValues>', '{ values }', 'Fired when validation passes and the form is submitted'],
+          ['ui-form-invalid', 'UIStructFormInvalidEvent<TValues>', '{ errors, values }', 'Fired when submission fails validation'],
+          ['ui-form-loading', 'UIStructFormLoadingEvent', '{ loading, fieldKey }', 'Fired when an async field dataSource starts or finishes loading'],
+          ['ui-form-step-error', 'UIStructFormStepErrorEvent', '{ stepKey, errors }', 'Fired when advancing a wizard step fails validation'],
         ]),
       ]
     },
@@ -1690,7 +2107,7 @@ container.notify({
   message: 'Compiled bundle in 120ms',
   variant: 'success',
   duration: 4000
-})`),
+})`, 'js'),
 
         subTitle('Properties'),
         propsTable([
@@ -1698,6 +2115,11 @@ container.notify({
           ['title', 'string', "''", 'Bold title header'],
           ['duration', 'number', '4000', 'Auto-dismiss timeout in ms (0 for persistent)'],
           ['closable', 'boolean', 'true', 'Shows close X button'],
+        ]),
+
+        subTitle('Events — ui-toast / ui-toast-container'),
+        eventsTable([
+          ['ui-dismiss', 'UIToastDismissEvent', '{}', 'Fired when a toast is dismissed by button, timer, or dismiss()'],
         ]),
       ]
     },
@@ -1741,7 +2163,7 @@ container.notify({
 announceLive('Search returned 14 matches', 'polite')
 
 // Assertive announcement (interrupts current speech immediately)
-announceLive('Network connection lost! Please reconnect.', 'assertive')`),
+announceLive('Network connection lost! Please reconnect.', 'assertive')`, 'ts'),
 
         subTitle('API Parameters'),
         propsTable([
@@ -1820,6 +2242,9 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
             pager.addEventListener('ui-page-change', (e) => {
               log.textContent = `Page changed to: ${e.detail.page} of ${e.detail.totalPages}`
             })
+            pager.addEventListener('ui-page-size-change', (e) => {
+              log.textContent = `Page size changed to: ${e.detail.pageSize} (page ${e.detail.page} of ${e.detail.totalPages})`
+            })
           },
         }),
         codeBlock(`<ui-pagination page="3" page-size="10" total="120" discrete-pages></ui-pagination>`),
@@ -1845,6 +2270,63 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
           ['discrete-pages', 'boolean', 'true', 'Shows numbered discrete page buttons'],
           ['first-last', 'boolean', 'true', 'Shows jump-to-first and jump-to-last buttons'],
           ['size', "'sm'|'md'|'lg'", "'md'", 'Size of pagination bar and buttons'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-page-change', 'UIPageChangeEvent', '{ page, pageSize, totalPages, total }', 'Fired when navigating to a different page'],
+          ['ui-page-size-change', 'UIPageSizeChangeEvent', '{ page, pageSize, totalPages, total }', 'Fired when the page size selector changes (does not duplicate ui-page-change)'],
+        ]),
+      ]
+    },
+  },
+
+  // ── Stepper ───────────────────────────────────────────────────────────────
+  {
+    id: 'stepper',
+    title: 'Stepper',
+    tag: 'ui-stepper',
+    group: 'Navigation',
+    description:
+      'Multi-step progress and wizard navigation (<code>&lt;ui-stepper&gt;</code> with <code>&lt;ui-step&gt;</code> children) with keyboard arrow navigation and completed step indicators.',
+    build() {
+      return [
+        subTitle('Interactive Stepper'),
+        demoBlock({
+          label: 'Click steps or use arrow keys to navigate',
+          html: `
+            <div style="width: 100%;">
+              <ui-stepper id="demo-stepper" active-step="1">
+                <ui-step step="1" label="Account" description="Basic details"></ui-step>
+                <ui-step step="2" label="Workspace" description="Region & plan"></ui-step>
+                <ui-step step="3" label="Confirm" description="Review & launch"></ui-step>
+              </ui-stepper>
+              <div id="demo-stepper-log" style="margin-top: 8px; font-size: 0.8rem; color: var(--docs-text-muted);">Active step index: 1</div>
+            </div>
+          `,
+          setup(preview) {
+            const stepper = preview.querySelector('#demo-stepper')
+            const log = preview.querySelector('#demo-stepper-log')
+            stepper.addEventListener('ui-change', (e) => {
+              log.textContent = `Active step index: ${e.detail.activeStep}`
+            })
+          },
+        }),
+        codeBlock(`<ui-stepper active-step="0">
+  <ui-step step="1" label="Account" description="Basic details"></ui-step>
+  <ui-step step="2" label="Workspace" description="Region & plan"></ui-step>
+  <ui-step step="3" label="Confirm" description="Review & launch"></ui-step>
+</ui-stepper>`),
+
+        subTitle('Properties — ui-stepper'),
+        propsTable([
+          ['active-step', 'number', '0', 'Zero-based index of the active step'],
+          ['orientation', "'horizontal'|'vertical'", "'horizontal'", 'Layout orientation of step items'],
+        ]),
+
+        subTitle('Events — ui-stepper'),
+        eventsTable([
+          ['ui-change', 'UIStepperChangeEvent', '{ activeStep: number }', 'Fired when the active step changes via click or keyboard'],
         ]),
       ]
     },
@@ -1879,7 +2361,7 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
           setup(preview) {
             const menu = preview.querySelector('#demo-menu')
             const log = preview.querySelector('#menu-selection-log')
-            menu.addEventListener('ui-menu-select', (e) => {
+            menu.addEventListener('ui-select', (e) => {
               log.textContent = `Selected action: ${e.detail.value}`
             })
           },
@@ -1903,7 +2385,7 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
           setup(preview) {
             const menu = preview.querySelector('ui-menu[trigger]')
             const log = preview.querySelector('#dropdown-menu-log')
-            menu.addEventListener('ui-menu-select', (e) => {
+            menu.addEventListener('ui-select', (e) => {
               log.textContent = `Dropdown selected: ${e.detail.value}`
             })
           },
@@ -1930,6 +2412,13 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
           ['shortcut', 'string', "''", 'Keyboard shortcut badge on the right'],
           ['danger', 'boolean', 'false', 'Styles item in semantic red for destructive actions'],
           ['disabled', 'boolean', 'false', 'Disables item from selection and keyboard focus'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-select', 'UIMenuSelectEvent', '{ value: string; item: UIMenuItem }', 'Fired when a menu item is activated by click or keyboard'],
+          ['ui-open', 'UIMenuOpenEvent', '{}', 'Fired when a dropdown menu opens'],
+          ['ui-close', 'UIMenuCloseEvent', '{}', 'Fired when a dropdown menu closes'],
         ]),
       ]
     },
@@ -1967,16 +2456,29 @@ announceLive('Network connection lost! Please reconnect.', 'assertive')`),
 list.data = [
   { id: '1', title: 'Auth Gateway', subtitle: 'OAuth2 provider', badge: 'Active' },
   { id: '2', title: 'Event Broker', subtitle: 'Kafka pipeline', badge: 'Warning' }
-]`),
+]`, 'js'),
 
         subTitle('Properties'),
         propsTable([
-          ['data', 'Record<string, any>[]', '[]', 'Array of data records to display'],
-          ['selectable', 'boolean', 'false', 'Enables row click selection'],
-          ['selection-mode', "'single'|'multiple'", "'single'", 'Selection mode'],
+          ['data', 'T[]', '[]', 'Array of data items to display (generic via UIList<T>)'],
+          ['selectable', 'boolean', 'false', 'Enables item click selection'],
+          ['selection-mode', "'single'|'multiple'", "'multiple'", 'Selection mode'],
           ['pagination', 'boolean', 'false', 'Enables pagination controls'],
           ['page-size', 'number', '10', 'Items per page'],
-          ['layout', "'vertical'|'horizontal'|'grid'", "'vertical'", 'List display layout'],
+          ['remote', 'boolean', 'false', 'Delegates sorting, paging, and infinite scroll to ui-page-request'],
+          ['virtual', 'boolean | VirtualScrollConfig', 'false', 'Enables windowed virtual scrolling'],
+          ['layout', "'list'|'grid'|'auto-fit'", "'list'", 'List display layout'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-sort', 'UIListSortEvent<T>', '{ sortBy, sortDirection, data }', 'Fired when sort() changes ordering'],
+          ['ui-page-change', 'UIListPageChangeEvent', '{ page, pageSize, totalPages, total }', 'Fired when the active page changes'],
+          ['ui-page-size-change', 'UIListPageSizeChangeEvent', '{ page, pageSize, totalPages, total }', 'Fired when items per page changes (resets page to 1)'],
+          ['ui-page-request', 'UIListPageRequestEvent<T>', '{ page, pageSize, sortBy, sortDirection, reason, append, resolve }', 'Fired when remote/fetchPage is enabled (or getPage() is called). Call resolve({ data, total })'],
+          ['ui-selection-change', 'UIListSelectionChangeEvent<T>', '{ selectedKeys, selectedItems, item?, index? }', 'Fired when item selection changes'],
+          ['ui-item-click', 'UIListItemClickEvent<T>', '{ item, index, key, selected }', 'Fired when a list item is clicked'],
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed }', 'Fired when a collapsible list header is toggled'],
         ]),
       ]
     },
@@ -1989,7 +2491,7 @@ list.data = [
     tag: 'ui-dialog',
     group: 'Overlays',
     description:
-      'Modal dialog surface powered by native <dialog> with backdrop blur, focus trapping, Escape key dismiss, and header surface styling.',
+      'Modal dialog surface powered by native <code>&lt;dialog&gt;</code> with backdrop blur, focus trapping, Escape key dismiss, and header surface styling.',
     build() {
       return [
         subTitle('Modal Dialog'),
@@ -2034,7 +2536,15 @@ document.querySelector('ui-dialog').showModal()`),
           ['title', 'string', "''", 'Dialog header title text'],
           ['open', 'boolean', 'false', 'Reflects modal visibility state'],
           ['showModal()', 'method', '—', 'Opens the dialog as a modal with backdrop'],
-          ['close()', 'method', '—', 'Closes the modal dialog'],
+          ['show()', 'method', '—', 'Opens the dialog modelessly'],
+          ['close()', 'method', '—', 'Closes the dialog'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-open', 'UIDialogOpenEvent', "{ presentation: 'modal' | 'modeless' }", 'Fired when the dialog opens'],
+          ['ui-close', 'UIDialogCloseEvent', '{}', 'Fired when the dialog closes'],
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed: boolean }', 'Fired when a collapsible dialog header is toggled'],
         ]),
       ]
     },
@@ -2096,6 +2606,13 @@ document.querySelector('ui-drawer').open = true`),
           ['open', 'boolean', 'false', 'Controls drawer visibility'],
           ['closable', 'boolean', 'true', 'Shows close button in header'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-open', 'UIDrawerOpenEvent', '{ placement: DrawerPlacement }', 'Fired when the drawer opens via show() or open = true'],
+          ['ui-close', 'UIDrawerCloseEvent', '{}', 'Fired when the drawer closes via close(), Escape, backdrop, or open = false'],
+          ['ui-collapse-change', 'UICollapseChangeEvent', '{ collapsed: boolean }', 'Fired when a collapsible drawer header is toggled'],
+        ]),
       ]
     },
   },
@@ -2136,7 +2653,7 @@ const button = document.querySelector('ui-button')
 
 button.addEventListener('click', () => {
   popover.toggle(button)
-})`),
+})`, 'js'),
 
         subTitle('Properties'),
         propsTable([
@@ -2145,6 +2662,12 @@ button.addEventListener('click', () => {
           ['offset', 'number', '6', 'Gap in pixels between anchor and popover surface'],
           ['trigger', 'string', "''", 'CSS selector of trigger element to automatically bind clicks'],
           ['type', "'auto'|'manual'", "'auto'", 'Native popover dismiss behavior'],
+        ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-open', 'UIPopoverOpenEvent', '{ placement: PopoverPlacement }', 'Fired when the popover opens'],
+          ['ui-close', 'UIPopoverCloseEvent', '{}', 'Fired when the popover closes'],
         ]),
       ]
     },
@@ -2181,7 +2704,7 @@ button.addEventListener('click', () => {
           setup(preview) {
             const menu = preview.querySelector('ui-context-menu')
             const log = preview.querySelector('#context-selection-log')
-            menu.addEventListener('ui-menu-select', (e) => {
+            menu.addEventListener('ui-select', (e) => {
               log.textContent = `Executed context action: ${e.detail.value}`
             })
           },
@@ -2201,6 +2724,13 @@ button.addEventListener('click', () => {
           ['open', 'boolean', 'false', 'Visibility state of the context menu'],
           ['disabled', 'boolean', 'false', 'Disables context menu interception'],
         ]),
+
+        subTitle('Events'),
+        eventsTable([
+          ['ui-open', 'UIContextMenuOpenEvent', '{ x: number; y: number }', 'Fired when the context menu opens at pointer coordinates'],
+          ['ui-close', 'UIContextMenuCloseEvent', '{}', 'Fired when the context menu closes'],
+          ['ui-select', 'UIMenuSelectEvent', '{ value: string; item: UIMenuItem }', 'Fired when a menu item is selected'],
+        ]),
       ]
     },
   },
@@ -2218,7 +2748,7 @@ function buildPage() {
   const hero = document.createElement('div')
   hero.className = 'docs-hero'
   hero.innerHTML = `
-    <div class="docs-hero-badge">@collidor/ui · v0.1.0</div>
+    <div class="docs-hero-badge">@collidor/ui · v2</div>
     <h1>Component <span>Reference</span></h1>
     <p>
       A Web Component UI library enforcing Golden Ratio relative spacing and OKLCH-derived
@@ -2245,21 +2775,31 @@ function buildPage() {
   for (const group of GROUP_ORDER) {
     if (!grouped[group]) continue
 
-    const groupLabel = document.createElement('li')
-    groupLabel.className = 'nav-group-label'
+    const groupEl = document.createElement('div')
+    groupEl.className = 'sidebar-group'
+
+    const groupLabel = document.createElement('div')
+    groupLabel.className = 'sidebar-title'
     groupLabel.textContent = group
-    navEl.appendChild(groupLabel)
+    groupEl.appendChild(groupLabel)
+
+    const ul = document.createElement('ul')
+    ul.className = 'sidebar-nav'
 
     for (const s of grouped[group]) {
       const li = document.createElement('li')
       const a = document.createElement('a')
+      a.className = 'sidebar-link'
       a.href = `#${s.id}`
       a.setAttribute('data-target', s.id)
-      const tagDisplay = s.tag.startsWith('.') ? s.tag : `&lt;${s.tag}&gt;`
-      a.innerHTML = `${s.title} <span class="nav-tag">${tagDisplay}</span>`
+      const tagDisplay = formatTagLabel(s.tag)
+      a.innerHTML = `<span>${s.title}</span><span class="nav-tag">${tagDisplay}</span>`
       li.appendChild(a)
-      navEl.appendChild(li)
+      ul.appendChild(li)
     }
+
+    groupEl.appendChild(ul)
+    navEl.appendChild(groupEl)
   }
 
   // Ensure toast container is mounted for toast notifications
@@ -2298,8 +2838,8 @@ function setupScrollSpy() {
       }
     },
     {
-      root: document.getElementById('content'),
-      rootMargin: '-20% 0px -60% 0px',
+      root: null,
+      rootMargin: '-15% 0px -65% 0px',
       threshold: 0,
     },
   )
@@ -2310,15 +2850,27 @@ function setupScrollSpy() {
 // ── Sidebar search ──────────────────────────────────────────────────────────
 function setupSearch() {
   const input = document.getElementById('sidebar-search')
-  const links = document.querySelectorAll('#sidebar-nav a[data-target]')
+  const groups = document.querySelectorAll('#sidebar-nav .sidebar-group')
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase()
-    links.forEach((a) => {
-      const text = a.textContent.toLowerCase()
-      a.classList.toggle('hidden-by-search', q.length > 0 && !text.includes(q))
+    groups.forEach((group) => {
+      let visibleCount = 0
+      group.querySelectorAll('li').forEach((li) => {
+        const a = li.querySelector('a[data-target]')
+        const text = a ? a.textContent.toLowerCase() : ''
+        const hidden = q.length > 0 && !text.includes(q)
+        li.classList.toggle('hidden-by-search', hidden)
+        if (a) a.classList.toggle('hidden-by-search', hidden)
+        if (!hidden) visibleCount++
+      })
+      group.classList.toggle('hidden-by-search', q.length > 0 && visibleCount === 0)
     })
   })
+}
+
+function scrollBehavior() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
 }
 
 // ── Smooth scroll nav clicks ────────────────────────────────────────────────
@@ -2327,23 +2879,72 @@ function setupNavClicks() {
     const a = e.target.closest('a[data-target]')
     if (!a) return
     e.preventDefault()
-    const target = document.getElementById(a.getAttribute('data-target'))
+    const targetId = a.getAttribute('data-target')
+    const target = document.getElementById(targetId)
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      history.replaceState(null, '', `#${targetId}`)
+      target.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
+      target.setAttribute('tabindex', '-1')
+      target.focus({ preventScroll: true })
     }
   })
+
+  const brandHome = document.getElementById('brand-home')
+  if (brandHome) {
+    brandHome.addEventListener('click', (e) => {
+      e.preventDefault()
+      history.replaceState(null, '', location.pathname + location.search)
+      window.scrollTo({ top: 0, behavior: scrollBehavior() })
+      const content = document.getElementById('content')
+      if (content) content.focus({ preventScroll: true })
+    })
+  }
+}
+
+// ── Initial body focus for keyboard navigation ──────────────────────────────
+function setupInitialFocus() {
+  const hashId = location.hash ? location.hash.slice(1) : ''
+  const hashTarget = hashId ? document.getElementById(hashId) : null
+  if (hashTarget) {
+    hashTarget.scrollIntoView({ block: 'start' })
+    hashTarget.setAttribute('tabindex', '-1')
+    hashTarget.focus({ preventScroll: true })
+    return
+  }
+  const content = document.getElementById('content')
+  if (content) {
+    content.focus({ preventScroll: true })
+  }
 }
 
 // ── Theme selector ──────────────────────────────────────────────────────────
 function setupThemeSelector() {
   const select = document.getElementById('theme-selector')
-
-  select.addEventListener('change', () => {
-    const theme = select.value
-    if (theme) {
+  const applyTheme = (theme) => {
+    if (theme && theme !== 'dark') {
       document.documentElement.setAttribute('data-theme', theme)
     } else {
       document.documentElement.removeAttribute('data-theme')
+    }
+  }
+
+  try {
+    const saved = localStorage.getItem('collidor-theme')
+    if (saved && [...select.options].some((o) => o.value === saved)) {
+      select.value = saved
+      applyTheme(saved)
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+
+  select.addEventListener('change', () => {
+    const theme = select.value
+    applyTheme(theme)
+    try {
+      localStorage.setItem('collidor-theme', theme)
+    } catch {
+      // Ignore storage restrictions
     }
   })
 }
@@ -2354,3 +2955,4 @@ setupScrollSpy()
 setupSearch()
 setupNavClicks()
 setupThemeSelector()
+setupInitialFocus()

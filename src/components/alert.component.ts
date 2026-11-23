@@ -1,6 +1,7 @@
 import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Variant } from '../constants.ts'
+import { UI_EVENTS, type UIAlertEventMap } from '../events.ts'
 import { announceLive } from '../announcer.ts'
 
 const DEFAULT_ICONS: Record<string, string> = {
@@ -29,7 +30,7 @@ function accentValue(variant: string): string {
   return `var(--ui-color-${name}, var(--ui-color-info))`
 }
 
-export class UIAlert extends UIElement {
+export class UIAlert extends UIElement<UIAlertEventMap> {
   static override properties: PropertyDeclarations = {
     variant: { type: String, reflect: true },
     title: { type: String, reflect: true },
@@ -125,7 +126,7 @@ export class UIAlert extends UIElement {
   }
 
   public dismiss(): void {
-    this.emit('ui-alert-close', {})
+    this.emit(UI_EVENTS.DISMISS, {})
     this.remove()
   }
 

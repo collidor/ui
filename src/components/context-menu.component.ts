@@ -5,9 +5,10 @@ import { html,
   type PropertyValues, } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import { UI_EVENTS, type UIContextMenuEventMap } from '../events.ts'
 import { UIMenuItem } from './menu.component.ts'
 
-export class UIContextMenu extends UIElement {
+export class UIContextMenu extends UIElement<UIContextMenuEventMap> {
   static override properties: PropertyDeclarations = {
     target: { type: String, reflect: true },
     disabled: bool(),
@@ -100,7 +101,7 @@ export class UIContextMenu extends UIElement {
     if (!item || !this.contains(item)) return
     event.stopPropagation()
     if (item.disabled) return
-    this.emit('ui-menu-select', { value: item.value, item })
+    this.emit(UI_EVENTS.SELECT, { value: item.value, item })
     this.close()
   }
 
@@ -179,7 +180,7 @@ export class UIContextMenu extends UIElement {
     }
     this.#positioned = false
     this.#reveal()
-    this.emit('ui-context-menu-open', { x, y })
+    this.emit(UI_EVENTS.OPEN, { x, y })
   }
 
   public close(): void {
@@ -263,7 +264,7 @@ export class UIContextMenu extends UIElement {
       this.#positioned = false
       this.#focusedIndex = -1
       this.#reveal()
-      this.emit('ui-context-menu-open', { x: this.#x, y: this.#y })
+      this.emit(UI_EVENTS.OPEN, { x: this.#x, y: this.#y })
     } else if (closed) {
       this.#hideNative()
       this.#focusedIndex = -1
@@ -271,7 +272,7 @@ export class UIContextMenu extends UIElement {
         this.#returnFocusEl.focus()
         this.#returnFocusEl = null
       }
-      this.emit('ui-context-menu-close')
+      this.emit(UI_EVENTS.CLOSE, {})
     }
   }
 

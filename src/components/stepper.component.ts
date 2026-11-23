@@ -1,6 +1,9 @@
 import { html, css, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import { UI_EVENTS, type UIStepperEventMap } from '../events.ts'
+
+const INTERNAL_STEP_SELECT = 'ui-internal-step-select'
 
 export class UIStep extends UIElement {
   static override properties: PropertyDeclarations = {
@@ -105,19 +108,29 @@ export class UIStep extends UIElement {
   completed = false
   disabled = false
 
+  #dispatchSelect(): void {
+    this.dispatchEvent(
+      new CustomEvent(INTERNAL_STEP_SELECT, {
+        bubbles: true,
+        composed: false,
+        detail: { step: this.step },
+      }),
+    )
+  }
+
   #onClick = (event: Event): void => {
     if (this.disabled) {
       event.preventDefault()
       return
     }
-    this.emit('step-selected', { step: this.step })
+    this.#dispatchSelect()
   }
 
   #onKeydown = (event: KeyboardEvent): void => {
     if (this.disabled) return
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault()
-      this.emit('step-selected', { step: this.step })
+      this.#dispatchSelect()
     }
   }
 
@@ -167,7 +180,7 @@ export class UIStep extends UIElement {
   }
 }
 
-export class UIStepper extends UIElement {
+export class UIStepper extends UIElement<UIStepperEventMap> {
   static override properties: PropertyDeclarations = {
     activeStep: { type: Number, attribute: 'active-step', reflect: true },
     orientation: { type: String, reflect: true },
@@ -201,6 +214,7 @@ export class UIStepper extends UIElement {
   orientation: 'horizontal' | 'vertical' = 'horizontal'
 
   #onStepSelected = (event: Event): void => {
+    event.stopPropagation()
     const detail = (event as CustomEvent<{ step?: number }>).detail
     if (detail?.step === undefined) return
     const steps = Array.from(this.querySelectorAll<UIStep>(UI_TAG_NAMES.STEP))
@@ -208,7 +222,7 @@ export class UIStepper extends UIElement {
     const targetIdx = index !== -1 ? index : detail.step
     this.activeStep = targetIdx
     this.#updateSteps()
-    this.emit('ui-change', { activeStep: this.activeStep })
+    this.emit(UI_EVENTS.CHANGE, { activeStep: this.activeStep })
   }
 
   #onKeydown = (event: KeyboardEvent): void => {
@@ -237,7 +251,7 @@ export class UIStepper extends UIElement {
       nextStep.focus()
       this.activeStep = nextIndex
       this.#updateSteps()
-      this.emit('ui-change', { activeStep: this.activeStep })
+      this.emit(UI_EVENTS.CHANGE, { activeStep: this.activeStep })
     }
   }
 
@@ -249,12 +263,12 @@ export class UIStepper extends UIElement {
     super.connectedCallback()
     this.setAttribute('role', 'tablist')
     this.setAttribute('aria-orientation', this.orientation)
-    this.addEventListener('step-selected', this.#onStepSelected)
+    this.addEventListener(INTERNAL_STEP_SELECT, this.#onStepSelected)
     this.addEventListener('keydown', this.#onKeydown)
   }
 
   override disconnectedCallback(): void {
-    this.removeEventListener('step-selected', this.#onStepSelected)
+    this.removeEventListener(INTERNAL_STEP_SELECT, this.#onStepSelected)
     this.removeEventListener('keydown', this.#onKeydown)
     super.disconnectedCallback()
   }

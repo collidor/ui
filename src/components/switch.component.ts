@@ -1,8 +1,9 @@
 import { html, css, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
+import { UI_EVENTS, type UISwitchEventMap } from '../events.ts'
 
-export class UISwitch extends UIElement {
+export class UISwitch extends UIElement<UISwitchEventMap> {
   static override properties: PropertyDeclarations = {
     checked: bool(),
     disabled: bool(),
@@ -198,7 +199,7 @@ export class UISwitch extends UIElement {
   toggle(): void {
     if (this.disabled) return
     this.checked = !this.checked
-    this.emit('ui-change', { checked: this.checked })
+    this.emit(UI_EVENTS.CHANGE, { checked: this.checked })
   }
 
   override connectedCallback(): void {

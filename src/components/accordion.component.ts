@@ -2,8 +2,14 @@ import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } fr
 import { UIElement, bool } from '../base.element.ts'
 import { headerSurfaceProperty, headerSurfaceStyle } from '../headerSurface.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import {
+  UI_EVENTS,
+  type UIAccordionEventMap,
+  type UIAccordionItemEventMap,
+  type UIAccordionToggleEvent,
+} from '../events.ts'
 
-export class UIAccordionItem extends UIElement {
+export class UIAccordionItem extends UIElement<UIAccordionItemEventMap> {
   static override properties: PropertyDeclarations = {
     headerSurface: headerSurfaceProperty,
     title: { type: String, reflect: true },
@@ -131,7 +137,7 @@ export class UIAccordionItem extends UIElement {
   public toggle(): void {
     if (this.disabled) return
     this.open = !this.open
-    this.emit('ui-accordion-change', { item: this, open: this.open })
+    this.emit(UI_EVENTS.TOGGLE, { item: this, open: this.open })
   }
 
   protected override render(): unknown {
@@ -171,7 +177,7 @@ if (!customElements.get(UI_TAG_NAMES.ACCORDION_ITEM)) {
   customElements.define(UI_TAG_NAMES.ACCORDION_ITEM, UIAccordionItem)
 }
 
-export class UIAccordion extends UIElement {
+export class UIAccordion extends UIElement<UIAccordionEventMap> {
   static override properties: PropertyDeclarations = {
     multiple: bool(),
   }
@@ -193,8 +199,8 @@ export class UIAccordion extends UIElement {
 
   multiple = false
 
-  #onChange = (event: Event): void => {
-    const detail = (event as CustomEvent<{ item: UIAccordionItem; open: boolean }>).detail
+  #onChange = (event: UIAccordionToggleEvent): void => {
+    const detail = event.detail
     if (!detail?.open || this.multiple) return
     const items = this.querySelectorAll<UIAccordionItem>(UI_TAG_NAMES.ACCORDION_ITEM)
     items.forEach((item) => {
@@ -231,12 +237,12 @@ export class UIAccordion extends UIElement {
 
   override connectedCallback(): void {
     super.connectedCallback()
-    this.addEventListener('ui-accordion-change', this.#onChange)
+    this.addEventListener(UI_EVENTS.TOGGLE, this.#onChange)
     this.addEventListener('keydown', this.#onKeydown)
   }
 
   override disconnectedCallback(): void {
-    this.removeEventListener('ui-accordion-change', this.#onChange)
+    this.removeEventListener(UI_EVENTS.TOGGLE, this.#onChange)
     this.removeEventListener('keydown', this.#onKeydown)
     super.disconnectedCallback()
   }

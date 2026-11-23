@@ -17,6 +17,9 @@
             "import": "./dist/index.js",
             "require": "./dist/index.cjs"
         },
+        "./globals": {
+            "types": "./src/globals.d.ts"
+        },
         "./tokens.css": "./src/tokens.css"
     },
     "repository": {

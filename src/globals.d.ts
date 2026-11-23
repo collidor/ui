@@ -5,6 +5,7 @@ import type {
   UISlider,
   UISwitch,
   UISelect,
+  UICombobox,
   UIField,
   UICard,
   UITabs,
@@ -32,6 +33,9 @@ import type {
   UIChipGroup,
   UIPopover,
   UIContextMenu,
+  UIStepper,
+  UIStep,
+  UIGlobalEventMap,
 } from './index.ts'
 
 declare global {
@@ -42,6 +46,7 @@ declare global {
     'ui-slider': UISlider
     'ui-switch': UISwitch
     'ui-select': UISelect
+    'ui-combobox': UICombobox<any>
     'ui-field': UIField
     'ui-card': UICard
     'ui-tabs': UITabs
@@ -49,10 +54,10 @@ declare global {
     'ui-icon': UIIcon
     'ui-tooltip': UITooltip
     'ui-dialog': UIDialog
-    'ui-table': UITable
+    'ui-table': UITable<any>
     'ui-pagination': UIPagination
-    'ui-list': UIList
-    'ui-struct-form': UIStructForm
+    'ui-list': UIList<any>
+    'ui-struct-form': UIStructForm<any>
     'ui-progress': UIProgress
     'ui-drawer': UIDrawer
     'ui-segmented-control': UISegmentedControl
@@ -69,7 +74,11 @@ declare global {
     'ui-chip-group': UIChipGroup
     'ui-popover': UIPopover
     'ui-context-menu': UIContextMenu
+    'ui-stepper': UIStepper
+    'ui-step': UIStep
   }
+
+  interface HTMLElementEventMap extends UIGlobalEventMap {}
 }
 
 export {}

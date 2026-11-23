@@ -30,7 +30,7 @@ describe('Windowed DOM Virtualization in UIList & UITable (Ticket 010)', () => {
       expect(renderedItems.length).toBeGreaterThan(0)
     })
 
-    it('emits ui-get-page when scrolling near bottom of virtual remote list', async () => {
+    it('emits ui-page-request when scrolling near bottom of virtual remote list', async () => {
       const list = document.createElement('ui-list') as UIList
       list.remote = true
       list.page = 1
@@ -42,7 +42,7 @@ describe('Windowed DOM Virtualization in UIList & UITable (Ticket 010)', () => {
       await list.updateComplete
 
       const pageSpy = vi.fn()
-      list.addEventListener('ui-get-page', pageSpy)
+      list.addEventListener('ui-page-request', pageSpy)
 
       const scrollContainer = list.shadowRoot!.querySelector('.list-content') as HTMLElement
       // Mock scroll positions for JSDOM
@@ -52,7 +52,17 @@ describe('Windowed DOM Virtualization in UIList & UITable (Ticket 010)', () => {
 
       scrollContainer.dispatchEvent(new Event('scroll'))
       expect(pageSpy).toHaveBeenCalledTimes(1)
-      expect(pageSpy.mock.calls[0][0].detail.page).toBe(2)
+      expect(pageSpy.mock.calls[0][0].detail).toEqual(
+        expect.objectContaining({
+          page: 2,
+          pageSize: 50,
+          sortBy: '',
+          sortDirection: null,
+          reason: 'scroll',
+          append: true,
+          resolve: expect.any(Function),
+        }),
+      )
     })
   })
 
@@ -65,9 +75,9 @@ describe('Windowed DOM Virtualization in UIList & UITable (Ticket 010)', () => {
         status: i % 2 === 0 ? 'active' : 'idle',
       }))
       table.columns = [
-        { key: 'id', title: 'ID' },
-        { key: 'name', title: 'Name' },
-        { key: 'status', title: 'Status' },
+        { key: 'id', label: 'ID' },
+        { key: 'name', label: 'Name' },
+        { key: 'status', label: 'Status' },
       ]
       table.data = bigRows
       table.virtual = { enabled: true, itemHeight: 40, overscan: 3 }
@@ -87,20 +97,20 @@ describe('Windowed DOM Virtualization in UIList & UITable (Ticket 010)', () => {
       expect(parseFloat(bottomSpacer.style.height)).toBeGreaterThan(30000)
     })
 
-    it('emits ui-get-page on scroll near bottom when remote is true', async () => {
+    it('emits ui-page-request on scroll near bottom when remote is true', async () => {
       const table = document.createElement('ui-table') as UITable
       table.remote = true
       table.page = 1
       table.pageSize = 50
       table.total = 500
-      table.columns = [{ key: 'id', title: 'ID' }]
+      table.columns = [{ key: 'id', label: 'ID' }]
       table.data = Array.from({ length: 50 }, (_, i) => ({ id: `row_${i}` }))
       table.virtual = { enabled: true, itemHeight: 40, threshold: 20 }
       document.body.appendChild(table)
       await table.updateComplete
 
       const pageSpy = vi.fn()
-      table.addEventListener('ui-get-page', pageSpy)
+      table.addEventListener('ui-page-request', pageSpy)
 
       const scrollContainer = table.shadowRoot!.querySelector('.table-scroll-container') as HTMLElement
       Object.defineProperty(scrollContainer, 'scrollTop', { value: 1950, writable: true })
@@ -109,7 +119,17 @@ describe('Windowed DOM Virtualization in UIList & UITable (Ticket 010)', () => {
 
       scrollContainer.dispatchEvent(new Event('scroll'))
       expect(pageSpy).toHaveBeenCalledTimes(1)
-      expect(pageSpy.mock.calls[0][0].detail.page).toBe(2)
+      expect(pageSpy.mock.calls[0][0].detail).toEqual(
+        expect.objectContaining({
+          page: 2,
+          pageSize: 50,
+          sortBy: '',
+          sortDirection: null,
+          reason: 'scroll',
+          append: true,
+          resolve: expect.any(Function),
+        }),
+      )
     })
   })
 })

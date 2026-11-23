@@ -2,8 +2,9 @@ import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } fr
 import { live } from 'lit/directives/live.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
+import { UI_EVENTS, type UIInputEventMap } from '../events.ts'
 
-export class UIInput extends UIElement {
+export class UIInput extends UIElement<UIInputEventMap> {
   static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     type: { type: String, reflect: true },
@@ -67,9 +68,17 @@ export class UIInput extends UIElement {
 
     .input-wrapper.invalid:focus-within:not(.disabled) {
       border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
-      box-shadow:
-        0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25)),
-        0 0 0 4px var(--ui-color-danger-subtle, oklch(0.65 0.22 25 / 0.3));
+      box-shadow: 0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25));
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 2px;
+    }
+
+    @media (forced-colors: active) {
+      .input-wrapper:focus-within:not(.disabled),
+      .input-wrapper.invalid:focus-within:not(.disabled) {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+      }
     }
 
     /* --- Golden Ratio Strict Relative Sizing & Padding --- */
@@ -142,6 +151,13 @@ export class UIInput extends UIElement {
       opacity: 1;
       color: var(--ui-color-text, oklch(0.96 0.01 260));
     }
+
+    .clear-btn:focus-visible {
+      opacity: 1;
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 2px;
+      border-radius: var(--ui-radius-sm, 0.146em);
+    }
   `
 
   value = ''
@@ -167,7 +183,7 @@ export class UIInput extends UIElement {
     const input = event.currentTarget
     if (!(input instanceof HTMLInputElement)) return
     this.value = input.value
-    this.emit('ui-input', { value: this.value })
+    this.emit(UI_EVENTS.INPUT, { value: this.value })
   }
 
   #onChange = (event: Event): void => {
@@ -175,15 +191,16 @@ export class UIInput extends UIElement {
     const input = event.currentTarget
     if (!(input instanceof HTMLInputElement)) return
     this.value = input.value
-    this.emit('ui-change', { value: this.value })
+    this.emit(UI_EVENTS.CHANGE, { value: this.value })
   }
 
   #onClear = (event: Event): void => {
     event.preventDefault()
     event.stopPropagation()
     this.value = ''
-    this.emit('ui-input', { value: '' })
-    this.emit('ui-change', { value: '' })
+    this.emit(UI_EVENTS.INPUT, { value: '' })
+    this.emit(UI_EVENTS.CHANGE, { value: '' })
+    this.focus()
   }
 
   protected override render(): unknown {

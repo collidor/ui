@@ -9,19 +9,28 @@ export default defineConfig({
   base: './',
   root: '.',
   resolve: {
+    // Dedupe lit via normal package exports resolution (so transitive @lit/*,
+    // lit-html, lit-element resolve naturally from lit's own node_modules under
+    // both pnpm and npm, keeping a single consistent lit-html instance in dev/build).
+    dedupe: ['lit'],
     alias: [
       { find: '@collidor/ui', replacement: resolve(uiSrc, 'index.ts') },
-      { find: /^lit\/(.*)/, replacement: resolve(__dirname, 'node_modules/lit/$1') },
-      { find: 'lit', replacement: resolve(__dirname, 'node_modules/lit') },
-      { find: /^@lit\/(.*)/, replacement: resolve(__dirname, 'node_modules/@lit/$1') },
-      { find: /^lit-html(\/.*)?$/, replacement: resolve(__dirname, 'node_modules/lit-html$1') },
-      { find: /^lit-element(\/.*)?$/, replacement: resolve(__dirname, 'node_modules/lit-element$1') },
+    ],
+  },
+  optimizeDeps: {
+    include: [
+      'lit',
+      'lit/directives/if-defined.js',
+      'lit/directives/live.js',
+      'lit/directives/repeat.js',
+      'lit/directives/style-map.js',
+      'lit/directives/unsafe-html.js',
     ],
   },
   server: {
     fs: {
       // Allow serving files from the parent ui/src directory
-      allow: [__dirname, uiSrc],
+      allow: [__dirname, uiSrc, resolve(__dirname, '../node_modules')],
     },
   },
   build: {

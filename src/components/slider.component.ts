@@ -3,8 +3,9 @@ import { live } from 'lit/directives/live.js'
 import { styleMap } from 'lit/directives/style-map.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import { UI_EVENTS, type UISliderEventMap } from '../events.ts'
 
-export class UISlider extends UIElement {
+export class UISlider extends UIElement<UISliderEventMap> {
   static override properties: PropertyDeclarations = {
     value: { type: Number, reflect: true },
     min: { type: Number, reflect: true },
@@ -151,7 +152,7 @@ export class UISlider extends UIElement {
     const val = this.#readValue(event)
     if (val === null) return
     this.value = val
-    this.emit('ui-input', { value: this.value })
+    this.emit(UI_EVENTS.INPUT, { value: this.value })
   }
 
   #onChange = (event: Event): void => {
@@ -159,7 +160,7 @@ export class UISlider extends UIElement {
     const val = this.#readValue(event)
     if (val === null) return
     this.value = val
-    this.emit('ui-change', { value: this.value })
+    this.emit(UI_EVENTS.CHANGE, { value: this.value })
   }
 
   protected override render(): unknown {

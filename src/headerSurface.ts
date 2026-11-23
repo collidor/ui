@@ -9,6 +9,7 @@ import {
   type TemplateResult,
 } from 'lit'
 import { UIElement, bool } from './base.element.ts'
+import { UI_EVENTS, type UIHeaderedElementEventMap } from './events.ts'
 
 export const HEADER_SURFACES = ['flat', 'raised', 'sunken', 'banner', 'accent'] as const
 
@@ -134,7 +135,11 @@ export function headerToggleIcon(collapsible: boolean): TemplateResult | typeof 
     : nothing
 }
 
-export abstract class UIHeaderedElement extends UIElement {
+export abstract class UIHeaderedElement<
+  EventMap extends UIHeaderedElementEventMap & {
+    [K in keyof EventMap]: CustomEvent<unknown>
+  } = UIHeaderedElementEventMap,
+> extends UIElement<EventMap> {
   static override properties: PropertyDeclarations = {
     headerSurface: headerSurfaceProperty,
     collapsible: bool(),
@@ -161,6 +166,6 @@ export abstract class UIHeaderedElement extends UIElement {
   public toggleCollapse(): void {
     if (!this.collapsible) return
     this.collapsed = !this.collapsed
-    this.emit('ui-collapse-toggle', { collapsed: this.collapsed })
+    this.emit(UI_EVENTS.COLLAPSE_CHANGE, { collapsed: this.collapsed })
   }
 }

@@ -1,6 +1,11 @@
 import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Variant } from '../constants.ts'
+import {
+  UI_EVENTS,
+  type UIToastContainerEventMap,
+  type UIToastEventMap,
+} from '../events.ts'
 import { announceLive } from '../announcer.ts'
 
 export interface ToastOptions {
@@ -37,7 +42,7 @@ function accentValue(variant: string): string {
   return `var(--ui-color-${name}, var(--ui-color-info))`
 }
 
-export class UIToast extends UIElement {
+export class UIToast extends UIElement<UIToastEventMap> {
   static override properties: PropertyDeclarations = {
     variant: { type: String, reflect: true },
     title: { type: String, reflect: true },
@@ -132,7 +137,7 @@ export class UIToast extends UIElement {
   public dismiss(): void {
     if (this.#timer) clearTimeout(this.#timer)
     this.#timer = null
-    this.emit('ui-toast-close', {})
+    this.emit(UI_EVENTS.DISMISS, {})
     this.style.opacity = '0'
     this.style.transform = 'translateY(10px)'
     setTimeout(() => this.remove(), 250)
@@ -188,7 +193,7 @@ if (!customElements.get(UI_TAG_NAMES.TOAST)) {
   customElements.define(UI_TAG_NAMES.TOAST, UIToast)
 }
 
-export class UIToastContainer extends UIElement {
+export class UIToastContainer extends UIElement<UIToastContainerEventMap> {
   static override properties: PropertyDeclarations = {
     placement: { type: String, reflect: true },
   }

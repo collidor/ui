@@ -1,8 +1,13 @@
 import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Variant, type Size } from '../constants.ts'
+import {
+  UI_EVENTS,
+  type UIChipEventMap,
+  type UIChipGroupEventMap,
+} from '../events.ts'
 
-export class UIChip extends UIElement {
+export class UIChip extends UIElement<UIChipEventMap> {
   static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     variant: { type: String, reflect: true },
@@ -121,6 +126,16 @@ export class UIChip extends UIElement {
   icon = ''
   avatar = ''
 
+  /** Whether this chip participates in keyboard focus / group roving tabindex. */
+  get isInteractive(): boolean {
+    return this.selectable || this.closable
+  }
+
+  #parentGroup(): UIChipGroup | null {
+    const group = this.closest(UI_TAG_NAMES.CHIP_GROUP)
+    return group instanceof UIChipGroup ? group : null
+  }
+
   #onClick = (event: Event): void => {
     if (
       event.composedPath().some((node) => node instanceof Element && node.classList.contains('chip-close-btn'))
@@ -130,11 +145,22 @@ export class UIChip extends UIElement {
     this.toggle()
   }
 
+  #wasInGroup = false
+
   #onKeydown = (event: KeyboardEvent): void => {
-    if (!this.selectable) return
-    if (event.key === ' ' || event.key === 'Enter') {
+    if (
+      event.composedPath().some((node) => node instanceof Element && node.classList.contains('chip-close-btn'))
+    ) {
+      return
+    }
+    if (this.selectable && (event.key === ' ' || event.key === 'Enter')) {
       event.preventDefault()
       this.toggle()
+      return
+    }
+    if (this.closable && (event.key === 'Delete' || event.key === 'Backspace')) {
+      event.preventDefault()
+      this.close()
     }
   }
 
@@ -144,22 +170,47 @@ export class UIChip extends UIElement {
   }
 
   #syncAria(): void {
+    const inGroup = this.#parentGroup() !== null
+
     if (this.selectable) {
       this.setAttribute('role', 'checkbox')
       this.setAttribute('aria-checked', String(this.selected))
-      this.setAttribute('tabindex', '0')
     } else {
       if (this.getAttribute('role') === 'checkbox') this.removeAttribute('role')
       this.removeAttribute('aria-checked')
+    }
+
+    if (this.closable) {
+      this.setAttribute('aria-keyshortcuts', 'Delete Backspace')
+    } else {
+      this.removeAttribute('aria-keyshortcuts')
+    }
+
+    if (!this.isInteractive) {
       this.removeAttribute('tabindex')
+    } else if (!inGroup) {
+      // Standalone closable-only chips expose a single Tab stop on the close button
+      if (this.selectable) {
+        this.setAttribute('tabindex', '0')
+      } else {
+        this.removeAttribute('tabindex')
+      }
+    } else if (!this.hasAttribute('tabindex')) {
+      this.setAttribute('tabindex', '-1')
     }
   }
 
   override connectedCallback(): void {
     super.connectedCallback()
+    const inGroup = this.#parentGroup() !== null
+    if (inGroup !== this.#wasInGroup) {
+      this.#wasInGroup = inGroup
+      this.requestUpdate()
+    }
     this.#syncAria()
     this.addEventListener('click', this.#onClick)
     this.addEventListener('keydown', this.#onKeydown)
+    this.#parentGroup()?.syncRovingTabindex()
   }
 
   override disconnectedCallback(): void {
@@ -171,11 +222,11 @@ export class UIChip extends UIElement {
   public toggle(): void {
     if (!this.selectable) return
     this.selected = !this.selected
-    this.emit('ui-chip-select', { value: this.value, selected: this.selected })
+    this.emit(UI_EVENTS.SELECT, { value: this.value, selected: this.selected })
   }
 
   public close(): void {
-    this.emit('ui-chip-close', { value: this.value })
+    this.emit(UI_EVENTS.DISMISS, { value: this.value })
     this.remove()
   }
 
@@ -185,10 +236,12 @@ export class UIChip extends UIElement {
       `var(--ui-color-${this.variant}, var(--ui-color-primary, oklch(0.65 0.19 230)))`,
     )
     this.#syncAria()
+    this.#parentGroup()?.syncRovingTabindex()
   }
 
   protected override render(): unknown {
     const closeLabel = this.value ? `Remove ${this.value}` : 'Remove'
+    const inGroup = this.#parentGroup() !== null
 
     return html`
       ${this.avatar
@@ -203,6 +256,7 @@ export class UIChip extends UIElement {
             title=${closeLabel}
             aria-label=${closeLabel}
             part="close-button"
+            tabindex=${inGroup ? '-1' : '0'}
             @click=${this.#onClose}
           >✕</button>`
         : nothing}
@@ -214,7 +268,7 @@ if (!customElements.get(UI_TAG_NAMES.CHIP)) {
   customElements.define(UI_TAG_NAMES.CHIP, UIChip)
 }
 
-export class UIChipGroup extends UIElement {
+export class UIChipGroup extends UIElement<UIChipGroupEventMap> {
   static override properties: PropertyDeclarations = {
     wrap: bool(),
   }
@@ -238,17 +292,142 @@ export class UIChipGroup extends UIElement {
   /** Omitted attribute wraps; `wrap="false"` keeps a single scrolling row. */
   wrap = true
 
+  #interactiveChips(): UIChip[] {
+    return Array.from(this.querySelectorAll<UIChip>(UI_TAG_NAMES.CHIP)).filter(
+      (chip) => chip.isInteractive && !chip.hidden,
+    )
+  }
+
+  #rootActiveElement(): Element | null {
+    const root = this.getRootNode()
+    if (root instanceof Document || root instanceof ShadowRoot) {
+      return root.activeElement
+    }
+    return document.activeElement
+  }
+
+  /**
+   * Maintains a single Tab stop across interactive chips in the group using
+   * roving tabindex (Arrow keys / Home / End navigate between chips).
+   */
+  public syncRovingTabindex(preferred?: UIChip | null): void {
+    const chips = this.#interactiveChips()
+    if (chips.length === 0) return
+
+    const activeEl = this.#rootActiveElement()
+    let target: UIChip | null = null
+
+    if (preferred && chips.includes(preferred)) {
+      target = preferred
+    } else if (activeEl instanceof UIChip && chips.includes(activeEl)) {
+      target = activeEl
+    } else {
+      target =
+        chips.find((c) => c.getAttribute('tabindex') === '0') ??
+        chips.find((c) => c.selected) ??
+        chips[0]
+    }
+
+    for (const chip of chips) {
+      chip.setAttribute('tabindex', chip === target ? '0' : '-1')
+    }
+  }
+
+  #onFocusIn = (event: FocusEvent): void => {
+    const target = event.target
+    if (target instanceof UIChip && target.isInteractive) {
+      this.syncRovingTabindex(target)
+    }
+  }
+
+  #onKeydown = (event: KeyboardEvent): void => {
+    const chips = this.#interactiveChips()
+    if (chips.length === 0) return
+
+    const current = event.target instanceof HTMLElement
+      ? event.target.closest<UIChip>(UI_TAG_NAMES.CHIP)
+      : null
+    const currentIndex = current ? chips.indexOf(current) : -1
+    if (currentIndex === -1) return
+
+    let nextIndex = -1
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % chips.length
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + chips.length) % chips.length
+        break
+      case 'Home':
+        nextIndex = 0
+        break
+      case 'End':
+        nextIndex = chips.length - 1
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    const nextChip = chips[nextIndex]
+    if (nextChip) {
+      this.syncRovingTabindex(nextChip)
+      nextChip.focus()
+    }
+  }
+
+  #onChipDismiss = (event: Event): void => {
+    const dismissed = event.target
+    if (!(dismissed instanceof UIChip)) return
+
+    const chips = this.#interactiveChips()
+    const idx = chips.indexOf(dismissed)
+    if (idx === -1) return
+
+    const activeEl = this.#rootActiveElement()
+    const hadFocus =
+      activeEl === dismissed ||
+      (activeEl instanceof Node && dismissed.contains(activeEl)) ||
+      dismissed.shadowRoot?.activeElement != null
+    const wasActiveTabStop = dismissed.getAttribute('tabindex') === '0'
+
+    if (!hadFocus && !wasActiveTabStop) return
+
+    const remaining = chips.filter((c) => c !== dismissed)
+    const nextChip = remaining[idx] ?? remaining[idx - 1] ?? null
+    if (nextChip) {
+      for (const chip of remaining) {
+        chip.setAttribute('tabindex', chip === nextChip ? '0' : '-1')
+      }
+      if (hadFocus) {
+        nextChip.focus()
+      }
+    }
+  }
+
   override connectedCallback(): void {
     super.connectedCallback()
     this.setAttribute('role', 'group')
+    this.addEventListener('focusin', this.#onFocusIn)
+    this.addEventListener('keydown', this.#onKeydown)
+    this.addEventListener(UI_EVENTS.DISMISS, this.#onChipDismiss)
+    this.syncRovingTabindex()
+  }
+
+  override disconnectedCallback(): void {
+    this.removeEventListener('focusin', this.#onFocusIn)
+    this.removeEventListener('keydown', this.#onKeydown)
+    this.removeEventListener(UI_EVENTS.DISMISS, this.#onChipDismiss)
+    super.disconnectedCallback()
   }
 
   protected override render(): unknown {
-    return html`<slot></slot>`
+    return html`<slot @slotchange=${() => this.syncRovingTabindex()}></slot>`
   }
 }
 
 if (!customElements.get(UI_TAG_NAMES.CHIP_GROUP)) {
   customElements.define(UI_TAG_NAMES.CHIP_GROUP, UIChipGroup)
 }
-

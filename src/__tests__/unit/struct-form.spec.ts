@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { mount, record } from '../harness.ts'
 import '../../components/struct-form.component.ts'
-import type { UIStructForm, StructFormChangeEventDetail } from '../../components/struct-form.component.ts'
+import type {
+  UIStructForm,
+  StructFormChangeEventDetail,
+  StructFormField,
+} from '../../components/struct-form.component.ts'
 
 describe('UIStructForm with UITable & Subform Dialog', () => {
   it('renders <ui-table> with columns, rows and aggregations', async () => {
@@ -75,7 +79,8 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const root = form.shadowRoot!
+    const root = form
+    expect(form.shadowRoot).toBeNull()
     const formRow = root.querySelector('.form-row')
     expect(formRow).toBeTruthy()
 
@@ -130,17 +135,17 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const addBtn = form.shadowRoot!.querySelector('.btn-table-add') as HTMLElement
+    const addBtn = form.querySelector('.btn-table-add') as HTMLElement
     expect(addBtn).toBeTruthy()
     addBtn.click()
     await form.updateComplete
 
-    const dialog = form.shadowRoot!.querySelector('ui-dialog')
+    const dialog = form.querySelector('ui-dialog')
     expect(dialog).toBeTruthy()
     expect((dialog as any).open).toBe(true)
 
     // The subform inside dialog
-    const subform = form.shadowRoot!.querySelector('.subform-instance') as UIStructForm
+    const subform = form.querySelector('.subform-instance') as UIStructForm
     expect(subform).toBeTruthy()
 
     // Submit subform with new item
@@ -182,7 +187,7 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const uiTable = form.shadowRoot!.querySelector('ui-table') as any
+    const uiTable = form.querySelector('ui-table') as any
     expect(uiTable).toBeTruthy()
     
     // Test the action formatter remove trigger directly
@@ -225,17 +230,17 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const chips = form.shadowRoot!.querySelectorAll('.tag-chip')
+    const chips = form.querySelectorAll('.tag-chip')
     expect(chips.length).toBe(2)
 
-    const tagInput = form.shadowRoot!.querySelector('.tag-input') as HTMLInputElement
+    const tagInput = form.querySelector('.tag-input') as HTMLInputElement
     tagInput.value = 'testing'
     tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await form.updateComplete
 
     expect((form.values.tags as string[]).includes('testing')).toBe(true)
 
-    const delBtn = form.shadowRoot!.querySelector('.tag-del-btn') as HTMLButtonElement
+    const delBtn = form.querySelector('.tag-del-btn') as HTMLButtonElement
     delBtn.click()
     await form.updateComplete
 
@@ -300,26 +305,26 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const stepper = form.shadowRoot!.querySelector('ui-stepper')
+    const stepper = form.querySelector('ui-stepper')
     expect(stepper).toBeTruthy()
 
-    const stepItems = form.shadowRoot!.querySelectorAll('ui-step')
+    const stepItems = form.querySelectorAll('ui-step')
     expect(stepItems.length).toBe(2)
     expect(stepItems[0].hasAttribute('active')).toBe(true)
 
     // Current step has username field
-    expect(form.shadowRoot!.querySelector('ui-input[data-key="username"]')).toBeTruthy()
-    expect(form.shadowRoot!.querySelector('ui-switch[data-key="confirm"]')).toBeNull()
+    expect(form.querySelector('ui-input[data-key="username"]')).toBeTruthy()
+    expect(form.querySelector('ui-switch[data-key="confirm"]')).toBeNull()
 
     // Click Next Step
-    const nextBtn = form.shadowRoot!.querySelector('.btn-step-next') as HTMLElement
+    const nextBtn = form.querySelector('.btn-step-next') as HTMLElement
     expect(nextBtn).toBeTruthy()
     nextBtn.click()
     await form.updateComplete
 
     // Step 2 is now active
-    expect(form.shadowRoot!.querySelectorAll('ui-step')[1].hasAttribute('active')).toBe(true)
-    expect(form.shadowRoot!.querySelector('ui-switch[data-key="confirm"]')).toBeTruthy()
+    expect(form.querySelectorAll('ui-step')[1].hasAttribute('active')).toBe(true)
+    expect(form.querySelector('ui-switch[data-key="confirm"]')).toBeTruthy()
   })
 
   it('validates current step and blocks moving to next step when invalid', async () => {
@@ -385,23 +390,23 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     await form.updateComplete
 
     // Try to click Next Step
-    const nextBtn = form.shadowRoot!.querySelector('.btn-step-next') as HTMLElement
+    const nextBtn = form.querySelector('.btn-step-next') as HTMLElement
     expect(nextBtn).toBeTruthy()
     nextBtn.click()
     await form.updateComplete
 
     // Navigation is blocked: still on step 0
-    const steps = form.shadowRoot!.querySelectorAll('ui-step')
+    const steps = form.querySelectorAll('ui-step')
     expect(steps[0].hasAttribute('active')).toBe(true)
     expect(steps[1].hasAttribute('active')).toBe(false)
 
     // Error alert is displayed
-    const stepAlert = form.shadowRoot!.querySelector('.step-alert')
+    const stepAlert = form.querySelector('.step-alert')
     expect(stepAlert).toBeTruthy()
     expect(form.errors['username']).toBe('Username must be at least 3 characters')
 
     // Field error is displayed on ui-field
-    const uiField = form.shadowRoot!.querySelector('ui-field')
+    const uiField = form.querySelector('ui-field')
     expect(uiField?.getAttribute('error')).toBe('Username must be at least 3 characters')
 
     // Fix the value
@@ -413,8 +418,8 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     await form.updateComplete
 
     // Step 2 is now active!
-    expect(form.shadowRoot!.querySelectorAll('ui-step')[1].hasAttribute('active')).toBe(true)
-    expect(form.shadowRoot!.querySelector('.step-alert')).toBeNull()
+    expect(form.querySelectorAll('ui-step')[1].hasAttribute('active')).toBe(true)
+    expect(form.querySelector('.step-alert')).toBeNull()
   })
 
   it('renders select widget with options populated from descriptor and widgetProps', async () => {
@@ -452,7 +457,7 @@ describe('UIStructForm with UITable & Subform Dialog', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const selectEl = form.shadowRoot!.querySelector('ui-select[data-key="industry"]') as any
+    const selectEl = form.querySelector('ui-select[data-key="industry"]') as any
     expect(selectEl).toBeTruthy()
     expect(selectEl.value).toBe('finance')
 
@@ -521,7 +526,7 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
     expect(interceptedCalls.length).toBe(1)
     expect(interceptedCalls[0].url).toContain('/api/v1/clusters?region=us-east&page=1')
 
-    const combobox = form.shadowRoot!.querySelector('ui-combobox[data-key="cluster"]') as any
+    const combobox = form.querySelector('ui-combobox[data-key="cluster"]') as any
     expect(combobox).toBeTruthy()
     expect(combobox.options.length).toBe(2)
     expect(combobox.options[0]).toEqual(
@@ -588,11 +593,11 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
     expect(interceptedUrls.length).toBe(2)
     expect(interceptedUrls[1]).toContain('region=eu-central')
 
-    const combobox = form.shadowRoot!.querySelector('ui-combobox[data-key="cluster"]') as any
+    const combobox = form.querySelector('ui-combobox[data-key="cluster"]') as any
     expect(combobox.options[0].value).toBe('eu-1')
   })
 
-  it('appends items on infinite scroll ui-get-page event', async () => {
+  it('appends items on infinite scroll ui-page-request event', async () => {
     const form = mount(document.createElement('ui-struct-form') as UIStructForm)
 
     form.fetchInterceptor = async (url: string) => {
@@ -626,12 +631,12 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
     await new Promise((r) => setTimeout(r, 50))
     await form.updateComplete
 
-    const combobox = form.shadowRoot!.querySelector('ui-combobox[data-key="cluster"]') as any
+    const combobox = form.querySelector('ui-combobox[data-key="cluster"]') as any
     expect(combobox.options.length).toBe(2)
 
     // Trigger page 2 append
     combobox.dispatchEvent(
-      new CustomEvent('ui-get-page', {
+      new CustomEvent('ui-page-request', {
         detail: { page: 2, append: true },
         bubbles: true,
         composed: true,
@@ -686,7 +691,7 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
     expect(providerCalledWith.length).toBe(1)
     expect(providerCalledWith[0].domain).toBe('acme.com')
 
-    const combobox = form.shadowRoot!.querySelector('ui-combobox[data-key="tenant"]') as any
+    const combobox = form.querySelector('ui-combobox[data-key="tenant"]') as any
     expect(combobox.options.length).toBe(2)
     expect(combobox.options[0].label).toBe('Acme Corp')
   })
@@ -728,15 +733,16 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
 
     // Form is currently fetching
     expect(form.isFetching).toBe(true)
-    const loaderBar = form.shadowRoot!.querySelector('.form-loader-bar')
+    const loaderBar = form.querySelector('.form-loader-bar')
     expect(loaderBar).toBeTruthy()
     expect(loaderBar?.getAttribute('role')).toBe('progressbar')
 
-    const fieldEl = form.shadowRoot!.querySelector('ui-field') as any
+    const fieldEl = form.querySelector('ui-field') as any
     expect(fieldEl.loading).toBe(true)
-    expect(fieldEl.shadowRoot!.querySelector('.field-spinner')).toBeTruthy()
+    expect(fieldEl.shadowRoot).toBeNull()
+    expect(fieldEl.querySelector('.field-spinner')).toBeTruthy()
 
-    const combobox = form.shadowRoot!.querySelector('ui-combobox') as any
+    const combobox = form.querySelector('ui-combobox') as any
     expect(combobox.loading).toBe(true)
     expect(combobox.shadowRoot!.querySelector('.spinner')).toBeTruthy()
 
@@ -751,7 +757,7 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
 
     // Loader bar removed, isFetching false
     expect(form.isFetching).toBe(false)
-    expect(form.shadowRoot!.querySelector('.form-loader-bar')).toBeNull()
+    expect(form.querySelector('.form-loader-bar')).toBeNull()
     expect(fieldEl.loading).toBe(false)
     expect(combobox.loading).toBe(false)
 
@@ -791,7 +797,7 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
     form.schema = mockSchema
     await form.updateComplete
 
-    const root = form.shadowRoot!
+    const root = form
 
     // Age should be <ui-number-input>, NOT <ui-slider>
     const ageInput = root.querySelector('ui-number-input[data-key="age"]') as any
@@ -804,6 +810,113 @@ describe('UIStructForm DataSource Engine & Virtualization', () => {
     expect(volumeSlider).toBeTruthy()
     expect(volumeSlider.getAttribute('min')).toBe('0')
     expect(volumeSlider.getAttribute('max')).toBe('100')
+  })
+
+  it('preserves light DOM header/actions children and wires native aria-describedby on fields', async () => {
+    const form = document.createElement('ui-struct-form') as UIStructForm
+    form.innerHTML = `
+      <h3 slot="header" class="custom-header">Account Setup</h3>
+      <ui-button slot="actions" class="custom-action">Save Custom</ui-button>
+    `
+    form.fields = [
+      { key: 'bio', label: 'Bio', widget: 'textarea', description: 'Short summary', required: true },
+    ]
+    mount(form)
+    await form.updateComplete
+
+    expect(form.shadowRoot).toBeNull()
+    expect(form.querySelector('.custom-header')?.textContent).toBe('Account Setup')
+    expect(form.querySelector('.custom-action')?.textContent).toBe('Save Custom')
+
+    const field = form.querySelector('ui-field')!
+    expect(field.shadowRoot).toBeNull()
+    const textarea = field.querySelector('textarea')!
+    const label = field.querySelector('label')!
+    const helper = field.querySelector('.helper-text')!
+
+    expect(label.getAttribute('for')).toBe(textarea.id)
+    expect(textarea.getAttribute('aria-describedby')).toContain(helper.id)
+  })
+
+  it('emits ui-form-submit once on submit button click and ui-form-change once on combobox change', async () => {
+    const form = mount(document.createElement('ui-struct-form') as UIStructForm)
+    form.fields = [
+      { key: 'name', label: 'Name', widget: 'text', required: true },
+      {
+        key: 'role',
+        label: 'Role',
+        widget: 'combobox',
+        options: [
+          { value: 'admin', label: 'Admin' },
+          { value: 'viewer', label: 'Viewer' },
+        ],
+      },
+    ]
+    form.values = { name: 'Ada', role: 'admin' }
+    await form.updateComplete
+
+    const changes: StructFormChangeEventDetail[] = []
+    form.addEventListener('ui-form-change', (e) => {
+      changes.push(e.detail)
+    })
+
+    const combobox = form.querySelector('ui-combobox[data-key="role"]') as HTMLElement
+    combobox.dispatchEvent(
+      new CustomEvent('ui-change', {
+        detail: { value: 'viewer' },
+        bubbles: true,
+        composed: true,
+      }),
+    )
+    await form.updateComplete
+    expect(changes).toHaveLength(1)
+    expect(changes[0].fieldKey).toBe('role')
+    expect(changes[0].fieldValue).toBe('viewer')
+
+    const submits: any[] = []
+    form.addEventListener('ui-form-submit', (e: Event) => {
+      submits.push((e as CustomEvent).detail)
+    })
+
+    const submitBtn = form.querySelector('.btn-submit') as HTMLElement
+    const nativeBtn = submitBtn.shadowRoot?.querySelector('button') as HTMLButtonElement | null
+    ;(nativeBtn ?? submitBtn).click()
+    await form.updateComplete
+    expect(submits).toHaveLength(1)
+  })
+
+  it('does not leak internal subform dialog ui-open/ui-close events to ancestors', async () => {
+    const wrapper = mount(document.createElement('div'))
+    const leaked: string[] = []
+    wrapper.addEventListener('ui-open', () => leaked.push('ui-open'))
+    wrapper.addEventListener('ui-close', () => leaked.push('ui-close'))
+
+    const form = document.createElement('ui-struct-form') as UIStructForm
+    form.fields = [
+      {
+        key: 'items',
+        label: 'Items',
+        widget: 'table',
+        widgetProps: {
+          columns: [{ key: 'name', label: 'Name', type: 'text' }],
+        },
+      },
+    ]
+    form.values = { items: [{ name: 'Alpha' }] }
+    wrapper.appendChild(form)
+    await form.updateComplete
+
+    const addBtn = form.querySelector('.btn-table-add') as HTMLElement
+    expect(addBtn).toBeTruthy()
+    addBtn.click()
+    await form.updateComplete
+
+    const dialog = form.querySelector('ui-dialog') as any
+    expect(dialog).toBeTruthy()
+    dialog.close()
+    await form.updateComplete
+
+    expect(leaked).toEqual([])
   })
 })
 

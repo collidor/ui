@@ -1,6 +1,9 @@
 import { html, css, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import { UI_EVENTS, type UITabsEventMap } from '../events.ts'
+
+const INTERNAL_TAB_SELECT = 'ui-internal-tab-select'
 
 export class UITab extends UIElement {
   static override properties: PropertyDeclarations = {
@@ -71,19 +74,29 @@ export class UITab extends UIElement {
   disabled = false
   controls = ''
 
+  #dispatchSelect(): void {
+    this.dispatchEvent(
+      new CustomEvent(INTERNAL_TAB_SELECT, {
+        bubbles: true,
+        composed: false,
+        detail: { value: this.value },
+      }),
+    )
+  }
+
   #onClick = (event: Event): void => {
     if (this.disabled) {
       event.preventDefault()
       return
     }
-    this.emit('tab-selected', { value: this.value })
+    this.#dispatchSelect()
   }
 
   #onKeydown = (event: KeyboardEvent): void => {
     if (this.disabled) return
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault()
-      this.emit('tab-selected', { value: this.value })
+      this.#dispatchSelect()
     }
   }
 
@@ -123,7 +136,7 @@ export class UITab extends UIElement {
   }
 }
 
-export class UITabs extends UIElement {
+export class UITabs extends UIElement<UITabsEventMap> {
   static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
   }
@@ -146,11 +159,12 @@ export class UITabs extends UIElement {
   value = ''
 
   #onTabSelected = (event: Event): void => {
+    event.stopPropagation()
     const detail = (event as CustomEvent<{ value?: string }>).detail
     if (detail?.value === undefined) return
     this.value = detail.value
     this.#updateActiveTab()
-    this.emit('ui-change', { value: this.value })
+    this.emit(UI_EVENTS.CHANGE, { value: this.value })
   }
 
   #onKeydown = (event: KeyboardEvent): void => {
@@ -180,7 +194,7 @@ export class UITabs extends UIElement {
       const tabVal = nextTab.value || String(Array.from(this.querySelectorAll<UITab>(UI_TAG_NAMES.TAB)).indexOf(nextTab))
       this.value = tabVal
       this.#updateActiveTab()
-      this.emit('ui-change', { value: this.value })
+      this.emit(UI_EVENTS.CHANGE, { value: this.value })
     }
   }
 
@@ -192,12 +206,12 @@ export class UITabs extends UIElement {
     super.connectedCallback()
     this.setAttribute('role', 'tablist')
     this.setAttribute('aria-orientation', 'horizontal')
-    this.addEventListener('tab-selected', this.#onTabSelected)
+    this.addEventListener(INTERNAL_TAB_SELECT, this.#onTabSelected)
     this.addEventListener('keydown', this.#onKeydown)
   }
 
   override disconnectedCallback(): void {
-    this.removeEventListener('tab-selected', this.#onTabSelected)
+    this.removeEventListener(INTERNAL_TAB_SELECT, this.#onTabSelected)
     this.removeEventListener('keydown', this.#onKeydown)
     super.disconnectedCallback()
   }

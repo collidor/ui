@@ -2,13 +2,14 @@ import { css, html, nothing, type PropertyValues, type CSSResultGroup, type Prop
 import { bool } from "../base.element.ts";
 import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
+import { UI_EVENTS, type UIDrawerEventMap } from "../events.ts";
 import { ifDefined } from "lit/directives/if-defined.js";
 
 export type DrawerPlacement = "left" | "right" | "top" | "bottom";
 
 let drawerIdCounter = 0;
 
-export class UIDrawer extends UIHeaderedElement {
+export class UIDrawer extends UIHeaderedElement<UIDrawerEventMap> {
     static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         open: bool(),
@@ -271,14 +272,16 @@ export class UIDrawer extends UIHeaderedElement {
     };
 
     public show(): void {
-        this.#triggerElement = document.activeElement as HTMLElement | null;
-        this.open = true;
-        this.emit("ui-drawer-open", {});
+        if (!this.open) {
+            this.#triggerElement = document.activeElement as HTMLElement | null;
+            this.open = true;
+        }
     }
 
     public close(): void {
-        this.open = false;
-        this.emit("ui-drawer-close", {});
+        if (this.open) {
+            this.open = false;
+        }
         if (this.#triggerElement) {
             this.#triggerElement.focus();
             this.#triggerElement = null;
@@ -305,10 +308,14 @@ export class UIDrawer extends UIHeaderedElement {
     protected override updated(changed: PropertyValues): void {
         super.updated(changed);
         if (!changed.has("open")) return;
-        if (this.open) {
+        const previous = changed.get("open");
+        const opened = this.open && previous !== true;
+        const closed = !this.open && previous === true;
+        if (opened) {
             if (!this.#triggerElement) {
                 this.#triggerElement = document.activeElement as HTMLElement | null;
             }
+            this.emit(UI_EVENTS.OPEN, { placement: this.placement });
             requestAnimationFrame(() => {
                 const closeBtn = this.shadow.querySelector<HTMLElement>(".drawer-close-btn");
                 if (closeBtn) {
@@ -318,7 +325,8 @@ export class UIDrawer extends UIHeaderedElement {
                     if (focusable[0]) focusable[0].focus();
                 }
             });
-        } else {
+        } else if (closed) {
+            this.emit(UI_EVENTS.CLOSE, {});
             if (this.#triggerElement) {
                 this.#triggerElement.focus();
                 this.#triggerElement = null;

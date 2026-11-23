@@ -3,17 +3,23 @@ import { repeat } from "lit/directives/repeat.js";
 import { bool } from "../base.element.ts";
 import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
 import {
-    type DataGetPageEventDetail,
-    type DataGetPageParams,
-    type DataPageEventDetail,
-    type DataSelectionEventDetail,
     type DataSortDirection,
-    type DataSortEventDetail,
-    type ListItemClickEventDetail,
     type ListLayout,
     type Size,
     UI_TAG_NAMES,
 } from "../constants.ts";
+import {
+    type DataPageRequestReason,
+    type ListItemClickEventDetail,
+    type ListPageChangeEventDetail,
+    type ListPageRequestEventDetail,
+    type ListPageRequestParams,
+    type ListPageSizeChangeEventDetail,
+    type ListSelectionChangeEventDetail,
+    type ListSortEventDetail,
+    UI_EVENTS,
+    type UIListEventMap,
+} from "../events.ts";
 import {
     calculatePagination,
     calculateVirtualWindow,
@@ -57,8 +63,8 @@ const META_KEYS = new Set([
     "type",
 ]);
 
-export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
-    extends UIHeaderedElement {
+export class UIList<T = Record<string, unknown>>
+    extends UIHeaderedElement<UIListEventMap<T>> {
     static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         layout: { type: String, reflect: true },
@@ -559,14 +565,20 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     }
 
                     .page-size-select:focus-visible {
-                        outline: 2px solid var(--ui-color-focus-ring, var(--ui-color-primary, oklch(0.65 0.19 230)));
-                        outline-offset: 1px;
+                        outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+                        outline-offset: 2px;
                     }
 
                     .pagination-controls {
-                        display: flex;
+                        display: inline-flex;
                         align-items: center;
                         gap: var(--ui-space-4xs, 0.146em);
+                        border-radius: var(--ui-radius-sm, 0.146em);
+                    }
+
+                    .pagination-controls:has(.page-btn:focus-visible) {
+                        outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+                        outline-offset: 2px;
                     }
 
                     .page-btn {
@@ -693,8 +705,34 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     }
 
                     .page-btn:focus-visible {
-                        outline: 2px solid var(--ui-color-focus-ring, var(--ui-color-primary, oklch(0.65 0.19 230)));
-                        outline-offset: 1px;
+                        outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+                        outline-offset: -2px;
+                    }
+
+                    .page-btn.active:focus-visible {
+                        outline-color: var(
+                            --ui-list-page-btn-active-color,
+                            var(
+                                --ui-pagination-btn-active-color,
+                                var(--ui-color-primary-text, oklch(0.98 0 0))
+                            )
+                        );
+                        outline-offset: -3px;
+                    }
+
+                    @media (forced-colors: active) {
+                        .pagination-controls:has(.page-btn:focus-visible) {
+                            outline: 2px solid Highlight;
+                            outline-offset: 2px;
+                        }
+                        .page-btn:focus-visible {
+                            outline: 2px solid Highlight;
+                            outline-offset: -2px;
+                        }
+                        .page-btn.active:focus-visible {
+                            outline-color: HighlightText;
+                            outline-offset: -3px;
+                        }
                     }
 
                         @media (prefers-reduced-motion: reduce) {
@@ -730,36 +768,27 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 #customItemRenderer: ItemRenderer<T> | null = null;
                 #acceptUnsorted = false;
                 #scrollTop = 0;
+                #pageRequestSeq = 0;
+                #scrollInFlight = false;
 
                 #onListScroll = (e: Event): void => {
                     const target = e.target as HTMLElement;
                     this.#scrollTop = target.scrollTop;
 
-                    if (this.remote && !this.loading) {
+                    if (this.remote && !this.loading && !this.#scrollInFlight) {
                         const threshold = 60;
                         if (
+                            target.scrollHeight > target.clientHeight &&
                             target.scrollTop + target.clientHeight >=
                             target.scrollHeight - threshold
                         ) {
                             if (this.total > this.#data.length) {
                                 const nextPage = (this.page || 1) + 1;
-                                this.dispatchEvent(
-                                    new CustomEvent("ui-get-page", {
-                                        bubbles: true,
-                                        composed: true,
-                                        detail: {
-                                            page: nextPage,
-                                            pageSize: this.pageSize,
-                                            sort: this.sortBy
-                                                ? {
-                                                      by: this.sortBy,
-                                                      direction:
-                                                          this.sortDirection,
-                                                  }
-                                                : undefined,
-                                        },
-                                    }),
-                                );
+                                this.getPage({
+                                    page: nextPage,
+                                    reason: "scroll",
+                                    append: true,
+                                });
                             }
                         }
                     }
@@ -780,13 +809,16 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 }
 
                 fetchPage?: (
-                    params: DataGetPageParams,
+                    params: ListPageRequestParams,
                 ) => Promise<{ data: T[]; total?: number }> | void;
 
 
                 private getItemKey(item: T, idx: number): string {
                     const keyProp = this.itemKey || "id";
-                    const raw = item[keyProp];
+                    const raw =
+                        typeof item === "object" && item !== null
+                            ? (item as Record<string, unknown>)[keyProp]
+                            : undefined;
                     if (raw !== undefined && raw !== null) {
                         return safeString(raw);
                     }
@@ -803,6 +835,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     const next = Array.isArray(newData) ? [...newData] : [];
                     this.#rawUnsortedData = [...next];
                     this.#data = next;
+                    this.#scrollInFlight = false;
                     this.requestUpdate("data", old);
                 }
 
@@ -950,7 +983,18 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     this.requestUpdate("pageSizeOptions", old);
                 }
 
+                #hadPaginationFocusBeforeUpdate = false;
+
                 protected override willUpdate(changed: PropertyValues): void {
+                    const paginationControls = this.shadowRoot?.querySelector(
+                        ".pagination-controls",
+                    );
+                    const activeEl = this.shadowRoot?.activeElement;
+                    this.#hadPaginationFocusBeforeUpdate = Boolean(
+                        paginationControls &&
+                            activeEl &&
+                            paginationControls.contains(activeEl),
+                    );
                     this.style.setProperty(
                         "--ui-list-min-item-width",
                         this.minItemWidth || "240px",
@@ -973,6 +1017,162 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     }
                 }
 
+                protected override updated(changed: PropertyValues): void {
+                    super.updated(changed);
+                    if (this.pagination) {
+                        this.#updatePaginationRovingTabindex();
+                    }
+                }
+
+                #updatePaginationRovingTabindex(): void {
+                    const container = this.shadowRoot?.querySelector(
+                        ".pagination-controls",
+                    );
+                    if (!container) {
+                        this.#hadPaginationFocusBeforeUpdate = false;
+                        return;
+                    }
+
+                    const buttons = Array.from(
+                        container.querySelectorAll<HTMLButtonElement>(
+                            "button.page-btn",
+                        ),
+                    );
+                    if (buttons.length === 0) {
+                        this.#hadPaginationFocusBeforeUpdate = false;
+                        return;
+                    }
+
+                    const activeEl = this.shadowRoot
+                        ?.activeElement as HTMLButtonElement | null;
+                    const hadFocus =
+                        (activeEl !== null && buttons.includes(activeEl)) ||
+                        this.#hadPaginationFocusBeforeUpdate;
+                    this.#hadPaginationFocusBeforeUpdate = false;
+
+                    let targetBtn: HTMLButtonElement | null = null;
+                    if (
+                        activeEl !== null &&
+                        buttons.includes(activeEl) &&
+                        !activeEl.disabled
+                    ) {
+                        targetBtn = activeEl;
+                    } else {
+                        const activePageBtn = buttons.find(
+                            (b) =>
+                                b.classList.contains("active") && !b.disabled,
+                        );
+                        targetBtn = activePageBtn ??
+                            buttons.find((b) => !b.disabled) ??
+                            buttons[0];
+                    }
+
+                    for (const btn of buttons) {
+                        btn.setAttribute(
+                            "tabindex",
+                            btn === targetBtn ? "0" : "-1",
+                        );
+                    }
+
+                    if (
+                        hadFocus &&
+                        this.shadowRoot?.activeElement !== targetBtn &&
+                        targetBtn &&
+                        !targetBtn.disabled
+                    ) {
+                        targetBtn.focus();
+                    }
+                }
+
+                #onPaginationKeyDown = (event: KeyboardEvent): void => {
+                    const container = this.shadowRoot?.querySelector(
+                        ".pagination-controls",
+                    );
+                    if (!container) return;
+
+                    const buttons = Array.from(
+                        container.querySelectorAll<HTMLButtonElement>(
+                            "button.page-btn:not([disabled])",
+                        ),
+                    );
+                    if (buttons.length === 0) return;
+
+                    const target = event.target as HTMLButtonElement;
+                    const currentIndex = buttons.indexOf(target);
+                    if (currentIndex === -1) return;
+
+                    let nextIndex = -1;
+                    switch (event.key) {
+                        case "ArrowRight":
+                        case "ArrowDown":
+                            event.preventDefault();
+                            nextIndex = (currentIndex + 1) % buttons.length;
+                            break;
+                        case "ArrowLeft":
+                        case "ArrowUp":
+                            event.preventDefault();
+                            nextIndex =
+                                (currentIndex - 1 + buttons.length) %
+                                buttons.length;
+                            break;
+                        case "Home":
+                            event.preventDefault();
+                            nextIndex = 0;
+                            break;
+                        case "End":
+                            event.preventDefault();
+                            nextIndex = buttons.length - 1;
+                            break;
+                        case " ":
+                            event.preventDefault();
+                            target.click();
+                            return;
+                        default:
+                            return;
+                    }
+
+                    if (nextIndex !== -1 && buttons[nextIndex]) {
+                        const nextBtn = buttons[nextIndex];
+                        const allButtons = Array.from(
+                            container.querySelectorAll<HTMLButtonElement>(
+                                "button.page-btn",
+                            ),
+                        );
+                        for (const b of allButtons) {
+                            b.setAttribute(
+                                "tabindex",
+                                b === nextBtn ? "0" : "-1",
+                            );
+                        }
+                        nextBtn.focus();
+                    }
+                };
+
+                #onPaginationFocusIn = (event: FocusEvent): void => {
+                    const target = event.target as HTMLElement;
+                    if (
+                        target &&
+                        target.tagName === "BUTTON" &&
+                        target.classList.contains("page-btn")
+                    ) {
+                        const container = this.shadowRoot?.querySelector(
+                            ".pagination-controls",
+                        );
+                        if (!container) return;
+                        const buttons = Array.from(
+                            container.querySelectorAll<HTMLButtonElement>(
+                                "button.page-btn",
+                            ),
+                        );
+                        for (const b of buttons) {
+                            b.setAttribute(
+                                "tabindex",
+                                b === target ? "0" : "-1",
+                            );
+                        }
+                    }
+                };
+
                 #sortedData(): T[] {
                     if (!this.sortBy || !this.sortDirection) {
                         return [...this.#rawUnsortedData];
@@ -984,12 +1184,13 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     );
                 }
 
-                #replacePageData(rows: T[], total?: number): void {
+                #applyPageData(rows: T[], total?: number, append = false): void {
                     const old = this.#data;
                     this.#acceptUnsorted = true;
                     try {
-                        this.#data = [...rows];
-                        this.#rawUnsortedData = [...rows];
+                        const next = append ? [...this.#data, ...rows] : [...rows];
+                        this.#data = next;
+                        this.#rawUnsortedData = [...next];
                         if (total !== undefined) this.total = total;
                         this.loading = false;
                         this.requestUpdate("data", old);
@@ -998,16 +1199,61 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     }
                 }
 
+                #requestPageIfRemote(reason: DataPageRequestReason): void {
+                    if (this.remote || typeof this.fetchPage === "function") {
+                        this.getPage({ reason, append: false });
+                    }
+                }
+
                 public getPage(
-                    customParams?: Partial<DataGetPageParams>,
+                    customParams?: Partial<ListPageRequestParams>,
                 ): void {
-                    const params: DataGetPageParams = {
-                        page: customParams?.page ?? this.page,
-                        pageSize: customParams?.pageSize ?? this.pageSize,
-                        sortBy: customParams?.sortBy ?? this.sortBy,
-                        sortDirection: customParams?.sortDirection ??
-                            this.sortDirection,
+                    if (customParams?.page !== undefined) {
+                        this.page = customParams.page;
+                    }
+                    if (customParams?.pageSize !== undefined) {
+                        this.pageSize = customParams.pageSize;
+                    }
+                    if (customParams?.sortBy !== undefined) {
+                        this.sortBy = customParams.sortBy;
+                    }
+                    if (customParams?.sortDirection !== undefined) {
+                        this.sortDirection = customParams.sortDirection;
+                    }
+
+                    const reason: DataPageRequestReason =
+                        customParams?.reason ?? "manual";
+                    const append = customParams?.append ?? false;
+
+                    const params: ListPageRequestParams = {
+                        page: this.page,
+                        pageSize: this.pageSize,
+                        sortBy: this.sortBy,
+                        sortDirection: this.sortDirection,
+                        reason,
+                        append,
                     };
+
+                    const seq = ++this.#pageRequestSeq;
+                    this.#scrollInFlight = reason === "scroll";
+
+                    const applyResult = (
+                        res?: { data: T[]; total?: number } | void,
+                    ): void => {
+                        if (seq !== this.#pageRequestSeq) return;
+                        this.#scrollInFlight = false;
+                        if (res && Array.isArray(res.data)) {
+                            this.#applyPageData(res.data, res.total, append);
+                        } else {
+                            this.loading = false;
+                        }
+                    };
+
+                    const detail: ListPageRequestEventDetail<T> = {
+                        ...params,
+                        resolve: applyResult,
+                    };
+                    this.emit(UI_EVENTS.PAGE_REQUEST, detail);
 
                     if (this.fetchPage) {
                         this.loading = true;
@@ -1019,14 +1265,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                         ) {
                             (result as Promise<{ data: T[]; total?: number }>)
                                 .then((res) => {
-                                    if (res && Array.isArray(res.data)) {
-                                        this.#replacePageData(
-                                            res.data,
-                                            res.total,
-                                        );
-                                    } else {
-                                        this.loading = false;
-                                    }
+                                    applyResult(res);
                                 })
                                 .catch(() => {
                                     this.loading = false;
@@ -1035,16 +1274,6 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                             this.loading = false;
                         }
                     }
-
-                    const detail: DataGetPageEventDetail<T> = {
-                        ...params,
-                        resolve: (res) => {
-                            if (res && Array.isArray(res.data)) {
-                                this.#replacePageData(res.data, res.total);
-                            } else this.loading = false;
-                        },
-                    };
-                    this.emit("ui-get-page", detail);
                 }
 
                 public sort(key: string, direction?: DataSortDirection): void {
@@ -1065,8 +1294,26 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                             : "asc";
                     }
 
-                    if (!this.remote) this.applySorting(true);
-                    this.getPage();
+                    if (!this.sortDirection) {
+                        this.sortBy = "";
+                    }
+
+                    if (this.pagination && this.page !== 1) {
+                        this.page = 1;
+                    }
+
+                    if (!this.remote) {
+                        this.applySorting(true);
+                    } else {
+                        this.requestUpdate();
+                        const detail: ListSortEventDetail<T> = {
+                            sortBy: this.sortBy,
+                            sortDirection: this.sortDirection,
+                            data: [...this.#data],
+                        };
+                        this.emit(UI_EVENTS.SORT, detail);
+                    }
+                    this.#requestPageIfRemote("sort");
                 }
 
                 private applySorting(emitEvent = true): void {
@@ -1074,12 +1321,12 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     this.#data = this.#sortedData();
                     this.requestUpdate("data", old);
                     if (emitEvent) {
-                        const detail: DataSortEventDetail<T> = {
-                            column: this.sortBy,
-                            direction: this.sortDirection,
+                        const detail: ListSortEventDetail<T> = {
+                            sortBy: this.sortBy,
+                            sortDirection: this.sortDirection,
                             data: [...this.#data],
                         };
-                        this.emit("ui-sort", detail);
+                        this.emit(UI_EVENTS.SORT, detail);
                     }
                 }
 
@@ -1090,14 +1337,14 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     );
                     if (this.page !== target) {
                         this.page = target;
-                        const detail: DataPageEventDetail = {
+                        const detail: ListPageChangeEventDetail = {
                             page: this.page,
                             pageSize: this.pageSize,
                             totalPages: this.totalPages,
                             total: this.total,
                         };
-                        this.emit("ui-page-change", detail);
-                        this.getPage();
+                        this.emit(UI_EVENTS.PAGE_CHANGE, detail);
+                        this.#requestPageIfRemote("page");
                     }
                 }
 
@@ -1106,14 +1353,14 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                     if (this.pageSize !== size) {
                         this.pageSize = size;
                         this.page = 1;
-                        const detail: DataPageEventDetail = {
+                        const detail: ListPageSizeChangeEventDetail = {
                             page: this.page,
                             pageSize: this.pageSize,
                             totalPages: this.totalPages,
                             total: this.total,
                         };
-                        this.emit("ui-page-change", detail);
-                        this.getPage();
+                        this.emit(UI_EVENTS.PAGE_SIZE_CHANGE, detail);
+                        this.#requestPageIfRemote("page-size");
                     }
                 }
 
@@ -1172,25 +1419,30 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 }
 
                 private emitSelectionChange(item?: T, index?: number): void {
-                    const detail: DataSelectionEventDetail<T> = {
+                    const detail: ListSelectionChangeEventDetail<T> = {
                         selectedKeys: this.selectedKeys,
                         selectedItems: this.selectedItems,
                         item,
                         index,
                     };
-                    this.emit("ui-selection-change", detail);
+                    this.emit(UI_EVENTS.SELECTION_CHANGE, detail);
                 }
 
                 #onItemClick(event: Event, item: T, index: number): void {
                     const target = event.target as HTMLElement | null;
-                    if (target?.classList.contains("item-select-cb")) return;
+                    if (
+                        target?.closest(
+                            ".item-select-cb, input, button, a, select, textarea, label, ui-button, ui-switch, ui-select, ui-combobox, ui-input, ui-number-input, ui-slider",
+                        )
+                    ) return;
                     if (this.selectable) this.toggleItemSelection(item, index);
                     const detail: ListItemClickEventDetail<T> = {
                         item,
                         index,
+                        key: this.getItemKey(item, index),
                         selected: this.isSelected(item, index),
                     };
-                    this.emit("ui-item-click", detail);
+                    this.emit(UI_EVENTS.ITEM_CLICK, detail);
                 }
 
                 #onItemCheck(event: Event, item: T, index: number): void {
@@ -1263,17 +1515,21 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                 }
 
                 #renderDefaultBody(item: T, index: number, selected: boolean) {
+                    const record: Record<string, unknown> =
+                        typeof item === "object" && item !== null
+                            ? (item as Record<string, unknown>)
+                            : { title: item };
                     const title = safeString(
-                        item.title ?? item.name ?? item.label ?? item.item ??
-                            item.key ?? `Item #${index + 1}`,
+                        record.title ?? record.name ?? record.label ?? record.item ??
+                            record.key ?? `Item #${index + 1}`,
                     );
-                    const icon = item.icon ? safeString(item.icon) : "";
-                    const subtitle = item.subtitle ?? item.description ??
-                        item.desc ?? item.category;
-                    const badge = item.badge ?? item.rarity ?? item.status ??
-                        item.type;
+                    const icon = record.icon ? safeString(record.icon) : "";
+                    const subtitle = record.subtitle ?? record.description ??
+                        record.desc ?? record.category;
+                    const badge = record.badge ?? record.rarity ?? record.status ??
+                        record.type;
                     const badgeText = badge ? safeString(badge) : "";
-                    const props = Object.entries(item)
+                    const props = Object.entries(record)
                         .filter(([key]) => !META_KEYS.has(key))
                         .slice(0, 4);
                     return html`
@@ -1385,6 +1641,8 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                 part="pagination-controls"
                                 role="navigation"
                                 aria-label="Pagination Navigation"
+                                @keydown="${this.#onPaginationKeyDown}"
+                                @focusin="${this.#onPaginationFocusIn}"
                             >
                                 <button
                                     type="button"
@@ -1393,6 +1651,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                     title="First Page"
                                     aria-label="First page"
                                     part="page-first"
+                                    tabindex="-1"
                                     @click="${() => this.setPage(1)}"
                                 >
                                     «
@@ -1404,6 +1663,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                     title="Previous Page"
                                     aria-label="Previous page"
                                     part="page-prev"
+                                    tabindex="-1"
                                     @click="${() => this.prevPage()}"
                                 >
                                     ‹
@@ -1430,6 +1690,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                                 part="${p === currentPage
                                                     ? "page-num page-num-active"
                                                     : "page-num"}"
+                                                tabindex="-1"
                                                 @click="${() =>
                                                     this.setPage(Number(p))}"
                                             >
@@ -1445,6 +1706,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                     title="Next Page"
                                     aria-label="Next page"
                                     part="page-next"
+                                    tabindex="-1"
                                     @click="${() => this.nextPage()}"
                                 >
                                     ›
@@ -1457,6 +1719,7 @@ export class UIList<T extends Record<string, unknown> = Record<string, unknown>>
                                     title="Last Page"
                                     aria-label="Last page"
                                     part="page-last"
+                                    tabindex="-1"
                                     @click="${() =>
                                         this.setPage(this.totalPages)}"
                                 >

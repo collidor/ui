@@ -1,14 +1,19 @@
 import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations, type PropertyValues } from 'lit'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
+import {
+  UI_EVENTS,
+  type ComboboxPageRequestEventDetail,
+  type ComboboxPageRequestReason,
+  type UIComboboxEventMap,
+} from '../events.ts'
 import { calculateVirtualWindow, type VirtualWindowResult } from '../dataCollection.utils.ts'
 
-export interface ComboboxOption {
-  value: string | number
+export interface ComboboxOption<V extends string | number = string | number> {
+  value: V
   label: string
   description?: string
   disabled?: boolean
-  [key: string]: unknown
 }
 
 export interface ComboboxVirtualConfig {
@@ -19,7 +24,9 @@ export interface ComboboxVirtualConfig {
   threshold?: number
 }
 
-export class UICombobox extends UIElement {
+export class UICombobox<
+  O extends ComboboxOption = ComboboxOption,
+> extends UIElement<UIComboboxEventMap<O>> {
   static override properties: PropertyDeclarations = {
     value: { type: Object },
     options: { type: Array },
@@ -57,8 +64,8 @@ export class UICombobox extends UIElement {
     open: { type: Boolean, reflect: true },
   }
 
-  declare value: string | number | (string | number)[]
-  declare options: ComboboxOption[]
+  declare value: O['value'] | O['value'][] | ''
+  declare options: O[]
   declare multiple: boolean
   declare searchable: boolean
   declare creatable: boolean
@@ -79,7 +86,7 @@ export class UICombobox extends UIElement {
 
   #searchQuery = ''
   #debounceTimer: ReturnType<typeof setTimeout> | null = null
-  #hydrationCache = new Map<string, ComboboxOption>()
+  #hydrationCache = new Map<string, O>()
   #scrollTop = 0
   #focusedIndex = -1
 
@@ -160,11 +167,22 @@ export class UICombobox extends UIElement {
       border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
     }
 
+    .combobox-container.invalid.focus:not(.disabled),
     .combobox-container.invalid:focus-within:not(.disabled) {
       border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
-      box-shadow:
-        0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25)),
-        0 0 0 4px var(--ui-color-danger-subtle, oklch(0.65 0.22 25 / 0.3));
+      box-shadow: 0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25));
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 2px;
+    }
+
+    @media (forced-colors: active) {
+      .combobox-container.focus:not(.disabled),
+      .combobox-container:focus-within:not(.disabled),
+      .combobox-container.invalid.focus:not(.disabled),
+      .combobox-container.invalid:focus-within:not(.disabled) {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+      }
     }
 
     .combobox-container.disabled {
@@ -206,6 +224,13 @@ export class UICombobox extends UIElement {
 
     .chip-del-btn:hover {
       opacity: 1;
+    }
+
+    .chip-del-btn:focus-visible {
+      opacity: 1;
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 1px;
+      border-radius: var(--ui-radius-full, 9999px);
     }
 
     /* Search input inside the trigger */
@@ -404,6 +429,9 @@ export class UICombobox extends UIElement {
   }
 
   override willUpdate(changed: PropertyValues): void {
+    if (changed.has('options') || (changed.has('loading') && !this.loading)) {
+      this.#scrollInFlight = false
+    }
     if (changed.has('options')) {
       if (Array.isArray(this.options)) {
         for (const opt of this.options) {
@@ -436,6 +464,39 @@ export class UICombobox extends UIElement {
     }
   }
 
+  #pageRequestSeq = 0
+  #scrollInFlight = false
+
+  #emitPageRequest(page: number, reason: ComboboxPageRequestReason, append: boolean): void {
+    const seq = ++this.#pageRequestSeq
+    if (reason === 'scroll') {
+      this.#scrollInFlight = true
+    } else {
+      this.#scrollInFlight = false
+    }
+    const detail: ComboboxPageRequestEventDetail<O> = {
+      page,
+      pageSize: this.pageSize || 50,
+      search: this.#searchQuery,
+      reason,
+      append,
+      resolve: (result) => {
+        if (seq !== this.#pageRequestSeq) return
+        this.#scrollInFlight = false
+        if (result && Array.isArray(result.options)) {
+          this.options = append
+            ? [...(this.options || []), ...result.options]
+            : result.options
+        }
+        if (result && result.total !== undefined) {
+          this.total = result.total
+        }
+        this.loading = false
+      },
+    }
+    this.emit(UI_EVENTS.PAGE_REQUEST, detail)
+  }
+
   #onSearchInput = (e: Event): void => {
     const input = e.target as HTMLInputElement
     this.#searchQuery = input.value
@@ -450,18 +511,7 @@ export class UICombobox extends UIElement {
       this.page = 1
       if (this.#debounceTimer) clearTimeout(this.#debounceTimer)
       this.#debounceTimer = setTimeout(() => {
-        this.dispatchEvent(
-          new CustomEvent('ui-get-page', {
-            bubbles: true,
-            composed: true,
-            detail: {
-              page: 1,
-              pageSize: this.pageSize || 50,
-              search: this.#searchQuery,
-              append: false,
-            },
-          }),
-        )
+        this.#emitPageRequest(1, 'search', false)
       }, this.debounceMs || 250)
     }
 
@@ -483,22 +533,41 @@ export class UICombobox extends UIElement {
   #createAndSelectOption(text: string): void {
     const trimmed = text.trim()
     if (!trimmed) return
-    const newOpt: ComboboxOption = { value: trimmed, label: trimmed }
+    const newOpt = { value: trimmed, label: trimmed } as O
     this.#hydrationCache.set(trimmed, newOpt)
     if (!this.remote) {
       this.options = [...(this.options || []), newOpt]
     }
-    this.dispatchEvent(
-      new CustomEvent('ui-create', {
-        bubbles: true,
-        composed: true,
-        detail: { value: trimmed, label: trimmed },
-      }),
-    )
+    this.emit(UI_EVENTS.CREATE, { value: trimmed, label: trimmed })
     this.#selectOption(newOpt)
   }
 
+  override focus(options?: FocusOptions): void {
+    this.renderRoot.querySelector<HTMLInputElement>('.combobox-search-input')?.focus(options)
+  }
+
+  #findNextEnabledIndex(
+    filteredOptions: ComboboxOption[],
+    canCreate: boolean,
+    fromIndex: number,
+    direction: 1 | -1,
+  ): number {
+    const totalCount = filteredOptions.length + (canCreate ? 1 : 0)
+    if (totalCount === 0) return -1
+    const isEnabled = (idx: number): boolean =>
+      idx === filteredOptions.length ? canCreate : !filteredOptions[idx]?.disabled
+
+    let idx = fromIndex
+    for (let step = 0; step < totalCount; step++) {
+      idx += direction
+      if (idx < 0 || idx >= totalCount) break
+      if (isEnabled(idx)) return idx
+    }
+    return fromIndex >= 0 && fromIndex < totalCount && isEnabled(fromIndex) ? fromIndex : -1
+  }
+
   #onKeyDown = (e: KeyboardEvent): void => {
+    if (this.disabled) return
     const filteredOptions = this.#getFilteredOptions()
     const canCreate = this.#canCreate()
     const totalCount = filteredOptions.length + (canCreate ? 1 : 0)
@@ -506,37 +575,57 @@ export class UICombobox extends UIElement {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        this.#navigateFocusDown(totalCount)
+        this.#navigateFocusDown(filteredOptions, canCreate, totalCount)
         break
       case 'ArrowUp':
         e.preventDefault()
-        this.#navigateFocusUp()
+        this.#navigateFocusUp(filteredOptions, canCreate, totalCount)
         break
       case 'Enter':
         e.preventDefault()
         this.#handleEnterKey(filteredOptions, canCreate)
         break
       case 'Escape':
-        this.#closeDropdown()
+        if (this.open) {
+          e.preventDefault()
+          e.stopPropagation()
+          this.#closeDropdown()
+        }
+        break
+      case 'Tab':
+        if (this.open) {
+          this.#closeDropdown()
+        }
         break
     }
   }
 
-  #navigateFocusDown(totalCount: number): void {
+  #navigateFocusDown(filteredOptions: ComboboxOption[], canCreate: boolean, totalCount: number): void {
     if (!this.open) {
       this.open = true
+      this.#focusedIndex = this.#findNextEnabledIndex(filteredOptions, canCreate, -1, 1)
+      this.requestUpdate()
       return
     }
-    this.#focusedIndex = Math.min(totalCount - 1, this.#focusedIndex + 1)
+    if (totalCount === 0) return
+    this.#focusedIndex = this.#findNextEnabledIndex(filteredOptions, canCreate, this.#focusedIndex, 1)
     this.requestUpdate()
   }
 
-  #navigateFocusUp(): void {
-    this.#focusedIndex = Math.max(0, this.#focusedIndex - 1)
+  #navigateFocusUp(filteredOptions: ComboboxOption[], canCreate: boolean, totalCount: number): void {
+    if (!this.open) {
+      this.open = true
+      this.#focusedIndex = this.#findNextEnabledIndex(filteredOptions, canCreate, totalCount, -1)
+      this.requestUpdate()
+      return
+    }
+    if (totalCount === 0) return
+    const start = this.#focusedIndex === -1 ? totalCount : this.#focusedIndex
+    this.#focusedIndex = this.#findNextEnabledIndex(filteredOptions, canCreate, start, -1)
     this.requestUpdate()
   }
 
-  #handleEnterKey(filteredOptions: ComboboxOption[], canCreate: boolean): void {
+  #handleEnterKey(filteredOptions: O[], canCreate: boolean): void {
     if (!this.open) {
       this.open = true
       return
@@ -563,7 +652,7 @@ export class UICombobox extends UIElement {
     this.requestUpdate()
   }
 
-  #selectOption(option: ComboboxOption): void {
+  #selectOption(option: O): void {
     if (option.disabled) return
     this.#hydrationCache.set(String(option.value), option)
 
@@ -601,39 +690,26 @@ export class UICombobox extends UIElement {
 
   #emitChange(): void {
     const selectedOptions = this.#getSelectedOptions()
-    this.dispatchEvent(
-      new CustomEvent('ui-change', {
-        bubbles: true,
-        composed: true,
-        detail: { value: this.value, selectedOptions },
-      }),
-    )
-    this.dispatchEvent(
-      new CustomEvent('change', {
-        bubbles: true,
-        composed: true,
-        detail: { value: this.value, selectedOptions },
-      }),
-    )
+    this.emit(UI_EVENTS.CHANGE, { value: this.value, selectedOptions })
   }
 
-  #getSelectedOptions(): ComboboxOption[] {
+  #getSelectedOptions(): O[] {
     if (this.multiple) {
       const vals = Array.isArray(this.value) ? this.value : []
       return vals.map((v) => {
         const strV = String(v)
-        return this.#hydrationCache.get(strV) || { value: v, label: strV }
+        return this.#hydrationCache.get(strV) ?? ({ value: v, label: strV } as O)
       })
     }
     if (this.value !== undefined && this.value !== null && this.value !== '') {
       const singleVal = Array.isArray(this.value) ? this.value[0] : this.value
       const strV = String(singleVal)
-      return [this.#hydrationCache.get(strV) || { value: singleVal, label: strV }]
+      return [this.#hydrationCache.get(strV) ?? ({ value: singleVal, label: strV } as O)]
     }
     return []
   }
 
-  #getFilteredOptions(): ComboboxOption[] {
+  #getFilteredOptions(): O[] {
     if (this.remote || !this.#searchQuery) {
       return this.options || []
     }
@@ -651,25 +727,17 @@ export class UICombobox extends UIElement {
     this.#scrollTop = list.scrollTop
 
     // Check for infinite scroll trigger when remote
-    if (this.remote && !this.loading) {
+    if (this.remote && !this.loading && !this.#scrollInFlight) {
       const threshold = 60
-      if (list.scrollTop + list.clientHeight >= list.scrollHeight - threshold) {
+      if (
+        list.scrollHeight > list.clientHeight &&
+        list.scrollTop + list.clientHeight >= list.scrollHeight - threshold
+      ) {
         const currentCount = (this.options || []).length
         if (this.total > currentCount) {
           const nextPage = (this.page || 1) + 1
           this.page = nextPage
-          this.dispatchEvent(
-            new CustomEvent('ui-get-page', {
-              bubbles: true,
-              composed: true,
-              detail: {
-                page: nextPage,
-                pageSize: this.pageSize || 50,
-                search: this.#searchQuery,
-                append: true,
-              },
-            }),
-          )
+          this.#emitPageRequest(nextPage, 'scroll', true)
         }
       }
     }
@@ -712,6 +780,7 @@ export class UICombobox extends UIElement {
             type="button"
             class="chip-del-btn"
             title="Remove"
+            aria-label="Remove ${opt.label}"
             @click=${(e: MouseEvent) => this.#removeSelectedValue(opt.value, e)}
           >
             ✕
@@ -721,7 +790,7 @@ export class UICombobox extends UIElement {
     )
   }
 
-  #renderVirtualOptions(virtualWindow: VirtualWindowResult<ComboboxOption>) {
+  #renderVirtualOptions(virtualWindow: VirtualWindowResult<O>) {
     return html`
       <div class="virtual-sizer" style="height: ${virtualWindow.totalHeight}px;">
         ${virtualWindow.visibleItems.map((option, localIndex) => {
@@ -746,7 +815,7 @@ export class UICombobox extends UIElement {
     `
   }
 
-  #renderStandardOptions(filteredOptions: ComboboxOption[], canCreate: boolean) {
+  #renderStandardOptions(filteredOptions: O[], canCreate: boolean) {
     if (filteredOptions.length === 0) {
       if (canCreate) return nothing
       return html`
@@ -791,8 +860,8 @@ export class UICombobox extends UIElement {
   }
 
   #renderDropdown(
-    filteredOptions: ComboboxOption[],
-    virtualWindow: VirtualWindowResult<ComboboxOption>,
+    filteredOptions: O[],
+    virtualWindow: VirtualWindowResult<O>,
     canCreate: boolean,
   ) {
     const viewportHeight =
@@ -858,6 +927,7 @@ export class UICombobox extends UIElement {
           class="combobox-search-input"
           .value=${this.#searchQuery}
           placeholder=${this.multiple && selectedOptions.length ? '' : placeholderText}
+          aria-label=${this.label || nothing}
           ?disabled=${this.disabled}
           @input=${this.#onSearchInput}
           @click=${(e: MouseEvent) => e.stopPropagation()}
@@ -867,7 +937,7 @@ export class UICombobox extends UIElement {
           ${this.loading
             ? html`<span class="spinner" part="spinner" role="status" aria-label="Loading options"></span>`
             : nothing}
-          <svg class="arrow-icon ${this.open ? 'open' : ''}" viewBox="0 0 24 24">
+          <svg class="arrow-icon ${this.open ? 'open' : ''}" viewBox="0 0 24 24" aria-hidden="true">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </div>

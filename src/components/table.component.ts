@@ -5,15 +5,24 @@ import { headerToggleIcon, UIHeaderedElement } from "../headerSurface.ts";
 import {
     type Size,
     type TableColumn,
-    type TableColumnsChangeEventDetail,
-    type TableGetPageEventDetail,
-    type TableGetPageParams,
-    type TablePageEventDetail,
-    type TableSelectionEventDetail,
     type TableSortDirection,
-    type TableSortEventDetail,
     UI_TAG_NAMES,
 } from "../constants.ts";
+import {
+    type DataPageRequestReason,
+    type TableColumnsChangeEventDetail,
+    type TablePageChangeEventDetail,
+    type TablePageRequestEventDetail,
+    type TablePageRequestParams,
+    type TablePageSizeChangeEventDetail,
+    type TableRowClickEventDetail,
+    type TableSelectionChangeEventDetail,
+    type TableSortEventDetail,
+    UI_EVENTS,
+    type UIPageChangeEvent,
+    type UIPageSizeChangeEvent,
+    type UITableEventMap,
+} from "../events.ts";
 import { calculateVirtualWindow, safeString, sortData } from "../dataCollection.utils.ts";
 import { ifDefined } from "lit/directives/if-defined.js";
 import "./pagination.component.ts";
@@ -32,8 +41,8 @@ function jsonArray(value: string | null): unknown {
 }
 
 export class UITable<
-    T extends Record<string, unknown> = Record<string, unknown>,
-> extends UIHeaderedElement {
+    T = Record<string, unknown>,
+> extends UIHeaderedElement<UITableEventMap<T>> {
     static override properties: PropertyDeclarations = {
         ...UIHeaderedElement.properties,
         size: { type: String, reflect: true },
@@ -118,8 +127,8 @@ export class UITable<
                 );
                 font-family: var(--ui-font-family, ui-sans-serif, system-ui);
                 width: 100%;
-                height: 100%;
-                flex: 1;
+                height: var(--ui-table-height, auto);
+                max-height: 100%;
                 min-height: 0;
             }
 
@@ -140,7 +149,7 @@ export class UITable<
                 width: 100%;
                 display: flex;
                 flex-direction: column;
-                flex: 1;
+                flex: 1 1 auto;
                 min-height: 0;
                 position: relative;
                 box-sizing: border-box;
@@ -380,7 +389,8 @@ export class UITable<
                             }
 
                             .table-scroll-container {
-                                flex: 1;
+                                flex: 1 1 auto;
+                                min-height: 0;
                                 position: relative;
                                 overflow-x: auto;
                                 overflow-y: auto;
@@ -783,36 +793,27 @@ export class UITable<
                                                     #customizerOpen = false;
                                                     #syncingHeader = false;
                                                     #scrollTop = 0;
+                                                    #pageRequestSeq = 0;
+                                                    #scrollInFlight = false;
 
                                                     #onTableScroll = (e: Event): void => {
                                                         const target = e.target as HTMLElement;
                                                         this.#scrollTop = target.scrollTop;
 
-                                                        if (this.remote && !this.loading) {
+                                                        if (this.remote && !this.loading && !this.#scrollInFlight) {
                                                             const threshold = 60;
                                                             if (
+                                                                target.scrollHeight > target.clientHeight &&
                                                                 target.scrollTop + target.clientHeight >=
                                                                 target.scrollHeight - threshold
                                                             ) {
                                                                 if (this.total > this.#data.length) {
                                                                     const nextPage = (this.page || 1) + 1;
-                                                                    this.dispatchEvent(
-                                                                        new CustomEvent("ui-get-page", {
-                                                                            bubbles: true,
-                                                                            composed: true,
-                                                                            detail: {
-                                                                                page: nextPage,
-                                                                                pageSize: this.pageSize,
-                                                                                sort: this.sortBy
-                                                                                    ? {
-                                                                                          by: this.sortBy,
-                                                                                          direction:
-                                                                                              this.sortDirection,
-                                                                                      }
-                                                                                    : undefined,
-                                                                            },
-                                                                        }),
-                                                                    );
+                                                                    this.getPage({
+                                                                        page: nextPage,
+                                                                        reason: "scroll",
+                                                                        append: true,
+                                                                    });
                                                                 }
                                                             }
                                                         }
@@ -835,7 +836,7 @@ export class UITable<
 
                                                     fetchPage?: (
                                                         params:
-                                                            TableGetPageParams,
+                                                            TablePageRequestParams,
                                                     ) =>
                                                         | Promise<
                                                             {
@@ -850,7 +851,9 @@ export class UITable<
                                                         idx: number,
                                                     ): string {
                                                         const raw =
-                                                            row[this.rowKey];
+                                                            typeof row === "object" && row !== null
+                                                                ? (row as Record<string, unknown>)[this.rowKey]
+                                                                : undefined;
                                                         if (
                                                             raw !== undefined &&
                                                             raw !== null
@@ -883,6 +886,7 @@ export class UITable<
                                                         this.#rawUnsortedData =
                                                             [...next];
                                                         this.#data = next;
+                                                        this.#scrollInFlight = false;
                                                         this.requestUpdate(
                                                             "data",
                                                             old,
@@ -1449,7 +1453,10 @@ export class UITable<
                                                         ) return this.#columns;
                                                         const first =
                                                             this.#data[0];
-                                                        if (!first) return [];
+                                                        if (
+                                                            typeof first !== "object" ||
+                                                            first === null
+                                                        ) return [];
                                                         return Object.keys(
                                                             first,
                                                         ).map((key) => ({
@@ -1462,9 +1469,23 @@ export class UITable<
                                                         }));
                                                     }
 
+                                                    #requestPageIfRemote(
+                                                        reason: DataPageRequestReason,
+                                                    ): void {
+                                                        if (
+                                                            this.remote ||
+                                                            typeof this.fetchPage === "function"
+                                                        ) {
+                                                            this.getPage({
+                                                                reason,
+                                                                append: false,
+                                                            });
+                                                        }
+                                                    }
+
                                                     public getPage(
                                                         options?: Partial<
-                                                            TableGetPageParams
+                                                            TablePageRequestParams
                                                         >,
                                                     ): void {
                                                         if (
@@ -1500,8 +1521,15 @@ export class UITable<
                                                                     .sortDirection;
                                                         }
 
+                                                        const reason: DataPageRequestReason =
+                                                            options?.reason ??
+                                                            "manual";
+                                                        const append =
+                                                            options?.append ??
+                                                            false;
+
                                                         const params:
-                                                            TableGetPageParams =
+                                                            TablePageRequestParams =
                                                                 {
                                                                     page:
                                                                         this.page,
@@ -1511,38 +1539,58 @@ export class UITable<
                                                                         this.sortBy,
                                                                     sortDirection:
                                                                         this.sortDirection,
+                                                                    reason,
+                                                                    append,
                                                                 };
+                                                        const seq = ++this.#pageRequestSeq;
+                                                        this.#scrollInFlight = reason === "scroll";
+                                                        const applyResult = (
+                                                            result?: {
+                                                                data: T[];
+                                                                total?: number;
+                                                            } | void,
+                                                        ): void => {
+                                                            if (seq !== this.#pageRequestSeq) return;
+                                                            this.#scrollInFlight = false;
+                                                            if (
+                                                                result &&
+                                                                Array.isArray(
+                                                                    result.data,
+                                                                )
+                                                            ) {
+                                                                this.data =
+                                                                    append
+                                                                        ? [
+                                                                            ...this
+                                                                                .#data,
+                                                                            ...result
+                                                                                .data,
+                                                                        ]
+                                                                        : result
+                                                                            .data;
+                                                            }
+                                                            if (
+                                                                result &&
+                                                                result.total !==
+                                                                    undefined
+                                                            ) {
+                                                                this.total =
+                                                                    result
+                                                                        .total;
+                                                            }
+                                                            this.loading =
+                                                                false;
+                                                        };
                                                         const detail:
-                                                            TableGetPageEventDetail<
+                                                            TablePageRequestEventDetail<
                                                                 T
                                                             > = {
                                                                 ...params,
-                                                                resolve: (
-                                                                    result,
-                                                                ) => {
-                                                                    if (
-                                                                        result
-                                                                            .data
-                                                                    ) {
-                                                                        this.data =
-                                                                            result
-                                                                                .data;
-                                                                    }
-                                                                    if (
-                                                                        result
-                                                                            .total !==
-                                                                            undefined
-                                                                    ) {
-                                                                        this.total =
-                                                                            result
-                                                                                .total;
-                                                                    }
-                                                                    this.loading =
-                                                                        false;
-                                                                },
+                                                                resolve:
+                                                                    applyResult,
                                                             };
                                                         this.emit(
-                                                            "ui-get-page",
+                                                            UI_EVENTS.PAGE_REQUEST,
                                                             detail,
                                                         );
 
@@ -1559,25 +1607,11 @@ export class UITable<
                                                                     ),
                                                                 )
                                                                 .then((res) => {
-                                                                    if (
-                                                                        res &&
-                                                                        res.data
-                                                                    ) {
-                                                                        this.data =
-                                                                            res.data;
-                                                                        if (
-                                                                            res.total !==
-                                                                                undefined
-                                                                        ) {
-                                                                            this.total =
-                                                                                res.total;
-                                                                        }
-                                                                    }
+                                                                    applyResult(
+                                                                        res,
+                                                                    );
                                                                 })
                                                                 .catch(() => {
-                                                                    // ignore fetch error
-                                                                })
-                                                                .finally(() => {
                                                                     this.loading =
                                                                         false;
                                                                 });
@@ -1643,9 +1677,9 @@ export class UITable<
                                                                 TableSortEventDetail<
                                                                     T
                                                                 > = {
-                                                                    column:
+                                                                    sortBy:
                                                                         this.sortBy,
-                                                                    direction:
+                                                                    sortDirection:
                                                                         this.sortDirection,
                                                                     data: [
                                                                         ...this
@@ -1653,11 +1687,13 @@ export class UITable<
                                                                     ],
                                                                 };
                                                             this.emit(
-                                                                "ui-sort",
+                                                                UI_EVENTS.SORT,
                                                                 detail,
                                                             );
                                                         }
-                                                        this.getPage();
+                                                        this.#requestPageIfRemote(
+                                                            "sort",
+                                                        );
                                                     }
 
                                                     private applySorting(
@@ -1675,9 +1711,9 @@ export class UITable<
                                                                 TableSortEventDetail<
                                                                     T
                                                                 > = {
-                                                                    column:
+                                                                    sortBy:
                                                                         this.sortBy,
-                                                                    direction:
+                                                                    sortDirection:
                                                                         this.sortDirection,
                                                                     data: [
                                                                         ...this
@@ -1685,7 +1721,7 @@ export class UITable<
                                                                     ],
                                                                 };
                                                             this.emit(
-                                                                "ui-sort",
+                                                                UI_EVENTS.SORT,
                                                                 detail,
                                                             );
                                                         }
@@ -1706,7 +1742,7 @@ export class UITable<
                                                         ) return;
                                                         this.page = target;
                                                         const detail:
-                                                            TablePageEventDetail =
+                                                            TablePageChangeEventDetail =
                                                                 {
                                                                     page:
                                                                         this.page,
@@ -1718,10 +1754,12 @@ export class UITable<
                                                                         this.total,
                                                                 };
                                                         this.emit(
-                                                            "ui-page-change",
+                                                            UI_EVENTS.PAGE_CHANGE,
                                                             detail,
                                                         );
-                                                        this.getPage();
+                                                        this.#requestPageIfRemote(
+                                                            "page",
+                                                        );
                                                     }
 
                                                     public setPageSize(
@@ -1738,7 +1776,7 @@ export class UITable<
                                                         this.pageSize = size;
                                                         this.page = 1;
                                                         const detail:
-                                                            TablePageEventDetail =
+                                                            TablePageSizeChangeEventDetail =
                                                                 {
                                                                     page:
                                                                         this.page,
@@ -1750,10 +1788,12 @@ export class UITable<
                                                                         this.total,
                                                                 };
                                                         this.emit(
-                                                            "ui-page-change",
+                                                            UI_EVENTS.PAGE_SIZE_CHANGE,
                                                             detail,
                                                         );
-                                                        this.getPage();
+                                                        this.#requestPageIfRemote(
+                                                            "page-size",
+                                                        );
                                                     }
 
                                                     public nextPage(): void {
@@ -2127,7 +2167,7 @@ export class UITable<
                                                                 ],
                                                             };
                                                         this.emit(
-                                                            "ui-columns-change",
+                                                            UI_EVENTS.COLUMNS_CHANGE,
                                                             detail,
                                                         );
                                                     }
@@ -2226,7 +2266,7 @@ export class UITable<
                                                         index?: number,
                                                     ): void {
                                                         const detail:
-                                                            TableSelectionEventDetail<
+                                                            TableSelectionChangeEventDetail<
                                                                 T
                                                             > = {
                                                                 selectedKeys:
@@ -2237,7 +2277,7 @@ export class UITable<
                                                                 index,
                                                             };
                                                         this.emit(
-                                                            "ui-selection-change",
+                                                            UI_EVENTS.SELECTION_CHANGE,
                                                             detail,
                                                         );
                                                     }
@@ -2258,15 +2298,19 @@ export class UITable<
                                                         row: T,
                                                         index: number,
                                                     ): unknown {
+                                                        const record: Record<string, unknown> =
+                                                            typeof row === "object" && row !== null
+                                                                ? (row as Record<string, unknown>)
+                                                                : {};
                                                         if (!col.formatter) {
                                                             return safeString(
-                                                                row[col.key],
+                                                                record[col.key],
                                                             );
                                                         }
                                                         try {
                                                             const result = col
                                                                 .formatter(
-                                                                    row[
+                                                                    record[
                                                                         col.key
                                                                     ],
                                                                     row,
@@ -2283,7 +2327,7 @@ export class UITable<
                                                             );
                                                         } catch {
                                                             return safeString(
-                                                                row[col.key],
+                                                                record[col.key],
                                                             );
                                                         }
                                                     }
@@ -2464,15 +2508,9 @@ export class UITable<
                                                                     HTMLElement)
                                                             ) return;
                                                             if (
-                                                                target
-                                                                        .tagName ===
-                                                                    "INPUT" ||
-                                                                target
-                                                                        .tagName ===
-                                                                    "BUTTON" ||
-                                                                target
-                                                                        .tagName ===
-                                                                    "A"
+                                                                target.closest(
+                                                                    "input, button, a, select, textarea, label, ui-button, ui-switch, ui-select, ui-combobox, ui-input, ui-number-input, ui-slider",
+                                                                )
                                                             ) return;
                                                             if (
                                                                 this.selectable
@@ -2483,13 +2521,21 @@ export class UITable<
                                                                     index,
                                                                 );
                                                             }
-                                                            this.emit(
-                                                                "ui-row-click",
-                                                                {
+                                                            const detail:
+                                                                TableRowClickEventDetail<
+                                                                    T
+                                                                > = {
                                                                     row,
                                                                     index,
                                                                     key,
-                                                                },
+                                                                    selected:
+                                                                        this.#selectedKeys.has(
+                                                                            key,
+                                                                        ),
+                                                                };
+                                                            this.emit(
+                                                                UI_EVENTS.ROW_CLICK,
+                                                                detail,
                                                             );
                                                         };
                                                         return html`
@@ -2964,13 +3010,13 @@ export class UITable<
                                                                                 .mode="${this.paginationMode ?? 'full'}"
                                                                                 .stepperFormat="${this.stepperFormat ?? 'arrows'}"
                                                                                 .discretePages="${this.discretePages ?? true}"
-                                                                                @ui-page-change="${(event: CustomEvent) => {
+                                                                                @ui-page-change="${(event: UIPageChangeEvent) => {
                                                                                     if (event.target !== this) {
                                                                                         event.stopPropagation();
                                                                                         this.setPage(event.detail.page);
                                                                                     }
                                                                                 }}"
-                                                                                @ui-page-size-change="${(event: CustomEvent) => {
+                                                                                @ui-page-size-change="${(event: UIPageSizeChangeEvent) => {
                                                                                     if (event.target !== this) {
                                                                                         event.stopPropagation();
                                                                                         this.setPageSize(event.detail.pageSize);

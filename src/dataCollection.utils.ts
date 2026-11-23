@@ -30,7 +30,7 @@ export function safeString(val: unknown): string {
 /**
  * Universal sorting engine for collection items
  */
-export function sortData<T extends Record<string, unknown>>(
+export function sortData<T = Record<string, unknown>>(
   items: T[],
   key: string,
   direction: 'asc' | 'desc' | null,
@@ -38,8 +38,10 @@ export function sortData<T extends Record<string, unknown>>(
   if (!direction || !key) return [...items]
 
   return [...items].sort((a, b) => {
-    const valA = a[key]
-    const valB = b[key]
+    const valA =
+      typeof a === 'object' && a !== null ? (a as Record<string, unknown>)[key] : undefined
+    const valB =
+      typeof b === 'object' && b !== null ? (b as Record<string, unknown>)[key] : undefined
 
     if (valA === valB) return 0
     if (valA === undefined || valA === null) return 1

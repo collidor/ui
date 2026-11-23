@@ -2,6 +2,7 @@ import { html, css, nothing, type PropertyValues, type CSSResultGroup, type Prop
 import { styleMap } from 'lit/directives/style-map.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
+import { UI_EVENTS, type UISegmentedControlEventMap } from '../events.ts'
 
 export class UISegmentItem extends UIElement {
   static override properties: PropertyDeclarations = {
@@ -66,7 +67,7 @@ if (!customElements.get(UI_TAG_NAMES.SEGMENT_ITEM)) {
   customElements.define(UI_TAG_NAMES.SEGMENT_ITEM, UISegmentItem)
 }
 
-export class UISegmentedControl extends UIElement {
+export class UISegmentedControl extends UIElement<UISegmentedControlEventMap> {
   static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     size: { type: String, reflect: true },
@@ -137,7 +138,7 @@ export class UISegmentedControl extends UIElement {
   setValue(val: string): void {
     if (this.value === val) return
     this.value = val
-    this.emit('ui-change', { value: val })
+    this.emit(UI_EVENTS.CHANGE, { value: val })
   }
 
   #pad(): string {

@@ -25,7 +25,7 @@ describe("collection contract", () => {
         table.columns = [{ key: "name", label: "Name", sortable: true }];
         table.data = heroes;
         const sorts = record<
-            { column: string; direction: string; data: Record<string, unknown>[] }
+            { sortBy: string; sortDirection: string | null; data: Record<string, unknown>[] }
         >(table, "ui-sort");
         const legacy = record(table, "sort");
 
@@ -33,8 +33,8 @@ describe("collection contract", () => {
 
         expect(rowNames(table.data)).toEqual(["Ajax", "Odysseus", "Paris"]);
         expect(sorts).toHaveLength(1);
-        expect(sorts[0]?.detail.column).toBe("name");
-        expect(sorts[0]?.detail.direction).toBe("asc");
+        expect(sorts[0]?.detail.sortBy).toBe("name");
+        expect(sorts[0]?.detail.sortDirection).toBe("asc");
         expect(rowNames(sorts[0]?.detail.data ?? [])).toEqual([
             "Ajax",
             "Odysseus",

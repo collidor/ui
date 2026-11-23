@@ -13,7 +13,7 @@ describe('UICombobox Component (Ticket 009)', () => {
     expect(el).toBeInstanceOf(UICombobox)
   })
 
-  it('selects option and emits ui-change and change events in single-select mode', async () => {
+  it('selects option and emits ui-change (without duplicate change) in single-select mode', async () => {
     const el = document.createElement('ui-combobox') as UICombobox
     el.options = [
       { value: 'aws', label: 'Amazon Web Services' },
@@ -24,7 +24,9 @@ describe('UICombobox Component (Ticket 009)', () => {
     await el.updateComplete
 
     const changeSpy = vi.fn()
+    const legacyChangeSpy = vi.fn()
     el.addEventListener('ui-change', changeSpy)
+    el.addEventListener('change', legacyChangeSpy)
 
     // Open dropdown
     el.open = true
@@ -40,6 +42,7 @@ describe('UICombobox Component (Ticket 009)', () => {
     expect(el.value).toBe('gcp')
     expect(el.open).toBe(false)
     expect(changeSpy).toHaveBeenCalledTimes(1)
+    expect(legacyChangeSpy).not.toHaveBeenCalled()
     expect(changeSpy.mock.calls[0][0].detail.value).toBe('gcp')
     expect(changeSpy.mock.calls[0][0].detail.selectedOptions[0].label).toBe(
       'Google Cloud Platform',
@@ -97,7 +100,7 @@ describe('UICombobox Component (Ticket 009)', () => {
     expect(input.placeholder).toBe('Alice Vance')
   })
 
-  it('debounces async search and emits ui-get-page when remote is true', async () => {
+  it('debounces async search and emits ui-page-request when remote is true', async () => {
     vi.useFakeTimers()
     const el = document.createElement('ui-combobox') as UICombobox
     el.remote = true
@@ -106,7 +109,7 @@ describe('UICombobox Component (Ticket 009)', () => {
     await el.updateComplete
 
     const pageSpy = vi.fn()
-    el.addEventListener('ui-get-page', pageSpy)
+    el.addEventListener('ui-page-request', pageSpy)
 
     const input = el.shadowRoot!.querySelector('.combobox-search-input') as HTMLInputElement
     input.value = 'prod-cluster'
@@ -116,12 +119,16 @@ describe('UICombobox Component (Ticket 009)', () => {
 
     vi.advanceTimersByTime(160)
     expect(pageSpy).toHaveBeenCalledTimes(1)
-    expect(pageSpy.mock.calls[0][0].detail).toEqual({
-      page: 1,
-      pageSize: 50,
-      search: 'prod-cluster',
-      append: false,
-    })
+    expect(pageSpy.mock.calls[0][0].detail).toEqual(
+      expect.objectContaining({
+        page: 1,
+        pageSize: 50,
+        search: 'prod-cluster',
+        reason: 'search',
+        append: false,
+        resolve: expect.any(Function),
+      }),
+    )
 
     vi.useRealTimers()
   })
@@ -206,7 +213,7 @@ describe('UICombobox Component (Ticket 009)', () => {
     await el.updateComplete
 
     const pageSpy = vi.fn()
-    el.addEventListener('ui-get-page', pageSpy)
+    el.addEventListener('ui-page-request', pageSpy)
 
     const dropdownList = el.shadowRoot!.querySelector('.combobox-dropdown-list') as HTMLElement
     // Mock scroll near bottom
@@ -218,13 +225,71 @@ describe('UICombobox Component (Ticket 009)', () => {
     await el.updateComplete
 
     expect(pageSpy).toHaveBeenCalledTimes(1)
-    expect(pageSpy.mock.calls[0][0].detail).toEqual({
-      page: 2,
-      pageSize: 10,
-      search: '',
-      append: true,
-    })
+    expect(pageSpy.mock.calls[0][0].detail).toEqual(
+      expect.objectContaining({
+        page: 2,
+        pageSize: 10,
+        search: '',
+        reason: 'scroll',
+        append: true,
+        resolve: expect.any(Function),
+      }),
+    )
     expect(el.page).toBe(2)
+  })
+
+  it('opens and navigates enabled options with ArrowDown/ArrowUp, closes on Tab/Escape, and hides decorative arrow', async () => {
+    const el = document.createElement('ui-combobox') as UICombobox
+    el.label = 'Cloud provider'
+    el.options = [
+      { value: 'aws', label: 'AWS' },
+      { value: 'disabled-opt', label: 'Disabled', disabled: true },
+      { value: 'gcp', label: 'GCP' },
+    ]
+    document.body.appendChild(el)
+    await el.updateComplete
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.combobox-search-input')!
+    const arrow = el.shadowRoot!.querySelector('.arrow-icon')!
+
+    expect(arrow.getAttribute('aria-hidden')).toBe('true')
+    expect(input.getAttribute('aria-label')).toBe('Cloud provider')
+
+    // focus() delegates to the search input
+    el.focus()
+    expect(el.shadowRoot!.activeElement).toBe(input)
+
+    // ArrowDown opens and highlights first enabled option (index 0)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    await el.updateComplete
+    expect(el.open).toBe(true)
+    let options = el.shadowRoot!.querySelectorAll('.combobox-option')
+    expect(options[0].classList.contains('focused')).toBe(true)
+
+    // ArrowDown skips disabled index 1 and focuses index 2
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    await el.updateComplete
+    options = el.shadowRoot!.querySelectorAll('.combobox-option')
+    expect(options[2].classList.contains('focused')).toBe(true)
+
+    // Tab closes dropdown without blocking Tab navigation
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    expect(input.dispatchEvent(tabEvent)).toBe(true)
+    await el.updateComplete
+    expect(el.open).toBe(false)
+
+    // ArrowUp when closed opens dropdown and highlights last enabled option (index 2)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }))
+    await el.updateComplete
+    expect(el.open).toBe(true)
+    options = el.shadowRoot!.querySelectorAll('.combobox-option')
+    expect(options[2].classList.contains('focused')).toBe(true)
+
+    // Escape closes dropdown and prevents bubbling default
+    const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    expect(input.dispatchEvent(escEvent)).toBe(false)
+    await el.updateComplete
+    expect(el.open).toBe(false)
   })
 })
 

@@ -14,7 +14,7 @@ describe("header surfaces", () => {
         const card = mount(document.createElement(UI_TAG_NAMES.CARD) as UICard);
         card.collapsible = true;
         card.headerSurface = "banner";
-        const toggles = record<{ collapsed: boolean }>(card, "ui-collapse-toggle");
+        const toggles = record<{ collapsed: boolean }>(card, "ui-collapse-change");
 
         const header = card.shadowRoot?.querySelector("[part='header']");
         header?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -34,7 +34,7 @@ describe("header surfaces", () => {
         action.slot = "header";
         action.textContent = "Edit";
         card.append(action);
-        const toggles = record(card, "ui-collapse-toggle");
+        const toggles = record(card, "ui-collapse-change");
 
         action.click();
 
@@ -49,7 +49,7 @@ describe("header surfaces", () => {
         table.columns = [{ key: "name", label: "Name", sortable: true }];
         table.data = [{ name: "Ajax" }];
         const sorts = record(table, "ui-sort");
-        const toggles = record<{ collapsed: boolean }>(table, "ui-collapse-toggle");
+        const toggles = record<{ collapsed: boolean }>(table, "ui-collapse-change");
 
         table.shadowRoot?.querySelector("[part='header']")?.dispatchEvent(
             new MouseEvent("click", { bubbles: true }),
@@ -87,7 +87,7 @@ describe("header surfaces", () => {
             };
         }
         dialog.showModal();
-        const toggles = record(dialog, "ui-collapse-toggle");
+        const toggles = record(dialog, "ui-collapse-change");
 
         dialog.shadowRoot?.querySelector("[part='close-btn']")?.dispatchEvent(
             new MouseEvent("click", { bubbles: true }),

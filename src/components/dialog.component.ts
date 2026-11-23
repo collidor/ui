@@ -2,8 +2,9 @@ import { html, css, nothing, type PropertyValues, type CSSResultGroup, type Prop
 import { bool } from '../base.element.ts'
 import { UIHeaderedElement, headerToggleIcon } from '../headerSurface.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import { UI_EVENTS, type UIDialogEventMap } from '../events.ts'
 
-export class UIDialog extends UIHeaderedElement {
+export class UIDialog extends UIHeaderedElement<UIDialogEventMap> {
   static override properties: PropertyDeclarations = {
     ...UIHeaderedElement.properties,
     open: bool(),
@@ -155,7 +156,7 @@ export class UIDialog extends UIHeaderedElement {
       const dialog = this.#dialog()
       if (dialog?.open) {
         this.#closeNative()
-        this.emit('ui-close')
+        this.emit(UI_EVENTS.CLOSE, {})
       }
       return
     }
@@ -175,12 +176,12 @@ export class UIDialog extends UIHeaderedElement {
 
     if (opened) {
       if (!dialog.open) this.#showNative()
-      this.emit('ui-open')
+      this.emit(UI_EVENTS.OPEN, { presentation: this.#presentation })
       return
     }
 
     if (dialog.open) this.#closeNative()
-    this.emit('ui-close')
+    this.emit(UI_EVENTS.CLOSE, {})
   }
 
   protected override render(): unknown {
@@ -230,7 +231,7 @@ export class UIDialog extends UIHeaderedElement {
       const dialog = this.#dialog()
       if (dialog && !dialog.open) {
         this.#showNative()
-        this.emit('ui-open')
+        this.emit(UI_EVENTS.OPEN, { presentation: this.#presentation })
       }
       return
     }

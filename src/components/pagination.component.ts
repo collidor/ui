@@ -2,22 +2,18 @@ import { html, css, nothing, type PropertyValues, type CSSResultGroup, type Prop
 import { ifDefined } from 'lit/directives/if-defined.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
+import {
+  UI_EVENTS,
+  type PageChangeEventDetail,
+  type PageSizeChangeEventDetail,
+  type UIPaginationEventMap,
+} from '../events.ts'
 import { getSmartPaginationPages } from '../dataCollection.utils.ts'
 
 export type PaginationMode = 'full' | 'stepper' | 'discrete' | '-+'
 export type StepperFormat = 'arrows' | '-+'
 
-export interface PageChangeEventDetail {
-  page: number
-  pageSize: number
-  totalPages: number
-  total: number
-}
-
-export interface PageSizeChangeEventDetail {
-  pageSize: number
-  page: number
-}
+export type { PageChangeEventDetail, PageSizeChangeEventDetail }
 
 /**
  * UIPagination Component
@@ -30,7 +26,7 @@ export interface PageSizeChangeEventDetail {
  *   - Arrow keys (Left/Right/Up/Down, Home/End) navigate between buttons
  *   - Space (and Enter) activates the focused button
  */
-export class UIPagination extends UIElement {
+export class UIPagination extends UIElement<UIPaginationEventMap> {
   static override properties: PropertyDeclarations = {
     page: { type: Number, reflect: true },
     pageSize: { type: Number, attribute: 'page-size', reflect: true },
@@ -149,8 +145,8 @@ export class UIPagination extends UIElement {
     }
 
     .page-size-select:focus-visible {
-      outline: 2px solid var(--ui-color-focus-ring, var(--ui-color-primary, oklch(0.65 0.19 230)));
-      outline-offset: 1px;
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 2px;
     }
 
     .pagination-controls {
@@ -177,8 +173,14 @@ export class UIPagination extends UIElement {
       border-radius: var(--ui-radius-sm, 0.146em);
     }
 
+    .pagination-combo-btn:has(.page-btn:focus-visible) {
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 2px;
+    }
+
     .page-btn {
       position: relative;
+      box-sizing: border-box;
       min-width: var(--ui-space-md, 1.618em);
       height: var(--ui-space-md, 1.618em);
       padding: 0 var(--ui-space-3xs, 0.236em);
@@ -299,9 +301,20 @@ export class UIPagination extends UIElement {
     }
 
     .page-btn:focus-visible {
-      outline: 2px solid var(--ui-color-focus-ring, var(--ui-color-primary, oklch(0.65 0.19 230)));
-      outline-offset: 1px;
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: -2px;
       z-index: 2;
+    }
+
+    .page-btn.active:focus-visible {
+      outline-color: var(
+        --ui-pagination-btn-active-color,
+        var(
+          --ui-table-page-btn-active-color,
+          var(--ui-color-primary-text, oklch(0.98 0.01 260))
+        )
+      );
+      outline-offset: -3px;
     }
 
     .page-btn[disabled] {
@@ -313,6 +326,7 @@ export class UIPagination extends UIElement {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      box-sizing: border-box;
       padding: 0 4px;
       opacity: 0.7;
       color: var(
@@ -333,6 +347,10 @@ export class UIPagination extends UIElement {
     }
 
     @media (forced-colors: active) {
+      .pagination-combo-btn:has(.page-btn:focus-visible) {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+      }
       .page-btn.active {
         outline: 2px solid Highlight;
         background: Highlight;
@@ -340,6 +358,11 @@ export class UIPagination extends UIElement {
       }
       .page-btn:focus-visible {
         outline: 2px solid Highlight;
+        outline-offset: -2px;
+      }
+      .page-btn.active:focus-visible {
+        outline-color: HighlightText;
+        outline-offset: -3px;
       }
     }
 
@@ -379,13 +402,7 @@ export class UIPagination extends UIElement {
       totalPages: this.totalPages,
       total: this.total,
     }
-    this.dispatchEvent(
-      new CustomEvent('ui-page-change', {
-        detail,
-        bubbles: true,
-        composed: true,
-      }),
-    )
+    this.emit(UI_EVENTS.PAGE_CHANGE, detail)
   }
 
   public setPageSize(newPageSize: number): void {
@@ -393,28 +410,13 @@ export class UIPagination extends UIElement {
     if (this.pageSize === size) return
     this.pageSize = size
     this.page = Math.max(1, Math.min(this.page, this.totalPages))
-    this.dispatchEvent(
-      new CustomEvent('ui-page-size-change', {
-        detail: {
-          pageSize: this.pageSize,
-          page: this.page,
-        } as PageSizeChangeEventDetail,
-        bubbles: true,
-        composed: true,
-      }),
-    )
-    this.dispatchEvent(
-      new CustomEvent('ui-page-change', {
-        detail: {
-          page: this.page,
-          pageSize: this.pageSize,
-          totalPages: this.totalPages,
-          total: this.total,
-        } as PageChangeEventDetail,
-        bubbles: true,
-        composed: true,
-      }),
-    )
+    const detail: PageSizeChangeEventDetail = {
+      page: this.page,
+      pageSize: this.pageSize,
+      totalPages: this.totalPages,
+      total: this.total,
+    }
+    this.emit(UI_EVENTS.PAGE_SIZE_CHANGE, detail)
   }
 
   public nextPage(): void {
@@ -437,8 +439,26 @@ export class UIPagination extends UIElement {
     this.setPage(this.totalPages)
   }
 
+  #hadFocusBeforeUpdate = false
+
+  override focus(options?: FocusOptions): void {
+    const target =
+      this.shadowRoot?.querySelector<HTMLButtonElement>(
+        '.pagination-combo-btn button.page-btn[tabindex="0"]',
+      ) ??
+      this.shadowRoot?.querySelector<HTMLButtonElement>(
+        '.pagination-combo-btn button.page-btn:not([disabled])',
+      )
+    target?.focus(options)
+  }
+
   protected override willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed)
+    const container = this.shadowRoot?.querySelector('.pagination-combo-btn')
+    const activeEl = this.shadowRoot?.activeElement
+    this.#hadFocusBeforeUpdate = Boolean(
+      container && activeEl && container.contains(activeEl),
+    )
     if (changed.has('mode')) {
       if (this.mode === '-+') {
         this.stepperFormat = '-+'
@@ -467,19 +487,28 @@ export class UIPagination extends UIElement {
 
   #updateRovingTabindex(): void {
     const container = this.shadowRoot?.querySelector('.pagination-combo-btn')
-    if (!container) return
+    if (!container) {
+      this.#hadFocusBeforeUpdate = false
+      return
+    }
 
     const buttons = Array.from(
       container.querySelectorAll<HTMLButtonElement>('button.page-btn'),
     )
-    if (buttons.length === 0) return
+    if (buttons.length === 0) {
+      this.#hadFocusBeforeUpdate = false
+      return
+    }
 
     const activeEl = this.shadowRoot?.activeElement as HTMLButtonElement | null
-    const hadFocus = activeEl !== null && buttons.includes(activeEl)
+    const hadFocus =
+      (activeEl !== null && buttons.includes(activeEl)) ||
+      this.#hadFocusBeforeUpdate
+    this.#hadFocusBeforeUpdate = false
 
     let targetBtn: HTMLButtonElement | null = null
 
-    if (hadFocus && !activeEl.disabled) {
+    if (activeEl !== null && buttons.includes(activeEl) && !activeEl.disabled) {
       targetBtn = activeEl
     } else {
       const activePageBtn = buttons.find(
@@ -496,8 +525,8 @@ export class UIPagination extends UIElement {
       btn.setAttribute('tabindex', btn === targetBtn ? '0' : '-1')
     }
 
-    // Restore focus if element was recreated during re-render
-    if (hadFocus && this.shadowRoot?.activeElement !== targetBtn && targetBtn) {
+    // Restore focus if focused button was disabled or recreated during re-render
+    if (hadFocus && this.shadowRoot?.activeElement !== targetBtn && targetBtn && !targetBtn.disabled) {
       targetBtn.focus()
     }
   }

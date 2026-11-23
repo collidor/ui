@@ -6,6 +6,7 @@
  */
 
 import { LitElement, type PropertyDeclaration, type PropertyValues } from 'lit'
+import type { UIEventListener } from './events.ts'
 
 const booleanConverter = {
   fromAttribute(value: string | null): boolean {
@@ -14,6 +15,55 @@ const booleanConverter = {
   toAttribute(value: boolean): string | null {
     return value ? '' : null
   },
+}
+
+const lightStyleCache = new WeakMap<Document, Map<string, CSSStyleSheet>>()
+
+/**
+ * Adopts or injects a deduplicated stylesheet into a host element's root node
+ * (Document or ShadowRoot) for Light DOM components.
+ */
+export function adoptLightStyles(host: HTMLElement, id: string, cssText: string): void {
+  const root = host.getRootNode()
+  const ownerDoc = host.ownerDocument || document
+  const target = root instanceof Document || root instanceof ShadowRoot ? root : ownerDoc
+
+  if (
+    'adoptedStyleSheets' in target &&
+    typeof CSSStyleSheet !== 'undefined' &&
+    typeof CSSStyleSheet.prototype.replaceSync === 'function'
+  ) {
+    const sheetDoc = target instanceof Document ? target : target.ownerDocument || ownerDoc
+    let docMap = lightStyleCache.get(sheetDoc)
+    if (!docMap) {
+      docMap = new Map()
+      lightStyleCache.set(sheetDoc, docMap)
+    }
+    let sheet = docMap.get(id)
+    if (!sheet) {
+      const SheetCtor = sheetDoc.defaultView?.CSSStyleSheet ?? CSSStyleSheet
+      sheet = new SheetCtor()
+      sheet.replaceSync(cssText)
+      docMap.set(id, sheet)
+    }
+    try {
+      if (!target.adoptedStyleSheets.includes(sheet)) {
+        target.adoptedStyleSheets = [...target.adoptedStyleSheets, sheet]
+      }
+      return
+    } catch {
+      // Fall through to <style> injection when adoptedStyleSheets is read-only
+    }
+  }
+
+  const container = target instanceof Document ? target.head || target.documentElement : target
+  if (!container) return
+  if (container.querySelector(`style[data-ui-light-style="${id}"]`)) return
+  const styleDoc = target instanceof Document ? target : target.ownerDocument || ownerDoc
+  const styleEl = styleDoc.createElement('style')
+  styleEl.setAttribute('data-ui-light-style', id)
+  styleEl.textContent = cssText
+  container.appendChild(styleEl)
 }
 
 export function bool(attribute?: string): PropertyDeclaration {
@@ -25,8 +75,61 @@ export function bool(attribute?: string): PropertyDeclaration {
   }
 }
 
-export abstract class UIElement extends LitElement {
+export abstract class UIElement<
+  EventMap extends { [K in keyof EventMap]: CustomEvent<unknown> } = Record<
+    never,
+    CustomEvent<unknown>
+  >,
+> extends LitElement {
   #flushing = false
+
+  override addEventListener<K extends keyof EventMap & string>(
+    type: K,
+    listener: UIEventListener<EventMap[K]>,
+    options?: boolean | AddEventListenerOptions,
+  ): void
+  override addEventListener<K extends keyof HTMLElementEventMap>(
+    type: K,
+    listener: (this: this, ev: HTMLElementEventMap[K]) => unknown,
+    options?: boolean | AddEventListenerOptions,
+  ): void
+  override addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ): void
+  override addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ): void {
+    if (!listener) return
+    super.addEventListener(type, listener, options)
+  }
+
+  override removeEventListener<K extends keyof EventMap & string>(
+    type: K,
+    listener: UIEventListener<EventMap[K]>,
+    options?: boolean | EventListenerOptions,
+  ): void
+  override removeEventListener<K extends keyof HTMLElementEventMap>(
+    type: K,
+    listener: (this: this, ev: HTMLElementEventMap[K]) => unknown,
+    options?: boolean | EventListenerOptions,
+  ): void
+  override removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ): void
+  override removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ): void {
+    if (!listener) return
+    super.removeEventListener(type, listener, options)
+  }
 
   protected get shadow(): ShadowRoot {
     return this.renderRoot as ShadowRoot
@@ -75,12 +178,12 @@ export abstract class UIElement extends LitElement {
 
   protected onDisconnected(): void {}
 
-  protected emit<T = unknown>(
-    eventName: string,
-    detail?: T,
-    options?: CustomEventInit<T>,
+  protected emit<K extends keyof EventMap & string>(
+    eventName: K,
+    detail: EventMap[K]['detail'],
+    options?: Omit<CustomEventInit, 'detail'>,
   ): boolean {
-    const customEvent = new CustomEvent<T>(eventName, {
+    const customEvent = new CustomEvent(eventName, {
       bubbles: true,
       composed: true,
       cancelable: true,

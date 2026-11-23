@@ -82,58 +82,29 @@ export interface TableColumn<T = Record<string, unknown>> {
   formatter?: (value: unknown, row: T, index: number) => unknown
 }
 
-export interface DataSortEventDetail<T = Record<string, unknown>> {
-  column: string
-  direction: DataSortDirection
-  data: T[]
-}
-export type TableSortEventDetail<T = Record<string, unknown>> = DataSortEventDetail<T>
-export type ListSortEventDetail<T = Record<string, unknown>> = DataSortEventDetail<T>
-
-export interface DataSelectionEventDetail<T = Record<string, unknown>> {
-  selectedKeys: string[]
-  selectedItems: T[]
-  item?: T
-  index?: number
-}
-
-export interface TableSelectionEventDetail<T = Record<string, unknown>> {
-  selectedKeys: string[]
-  selectedRows: T[]
-  row?: T
-  index?: number
-}
-
-export interface DataPageEventDetail {
-  page: number
-  pageSize: number
-  totalPages: number
-  total: number
-}
-export type TablePageEventDetail = DataPageEventDetail
-export type ListPageEventDetail = DataPageEventDetail
-
-export interface DataGetPageParams {
-  page: number
-  pageSize: number
-  sortBy: string
-  sortDirection: DataSortDirection
-}
-export type TableGetPageParams = DataGetPageParams
-export type ListGetPageParams = DataGetPageParams
-
-export interface DataGetPageEventDetail<T = Record<string, unknown>> extends DataGetPageParams {
-  resolve?: (result: { data: T[]; total?: number }) => void
-}
-export type TableGetPageEventDetail<T = Record<string, unknown>> = DataGetPageEventDetail<T>
-export type ListGetPageEventDetail<T = Record<string, unknown>> = DataGetPageEventDetail<T>
-
-export interface TableColumnsChangeEventDetail<T = Record<string, unknown>> {
-  columns: TableColumn<T>[]
-}
-
-export interface ListItemClickEventDetail<T = Record<string, unknown>> {
-  item: T
-  index: number
-  selected: boolean
-}
+export {
+  UI_EVENTS,
+  type UIEventName,
+  type DataSortEventDetail,
+  type TableSortEventDetail,
+  type ListSortEventDetail,
+  type TableSelectionChangeEventDetail,
+  type ListSelectionChangeEventDetail,
+  type PageChangeEventDetail,
+  type TablePageChangeEventDetail,
+  type ListPageChangeEventDetail,
+  type PageSizeChangeEventDetail,
+  type TablePageSizeChangeEventDetail,
+  type ListPageSizeChangeEventDetail,
+  type DataPageRequestReason,
+  type DataPageRequestParams,
+  type TablePageRequestParams,
+  type ListPageRequestParams,
+  type DataPageRequestResult,
+  type DataPageRequestEventDetail,
+  type TablePageRequestEventDetail,
+  type ListPageRequestEventDetail,
+  type TableColumnsChangeEventDetail,
+  type TableRowClickEventDetail,
+  type ListItemClickEventDetail,
+} from './events.ts'

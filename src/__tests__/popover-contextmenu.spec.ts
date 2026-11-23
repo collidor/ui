@@ -31,8 +31,8 @@ describe("UIPopover and UIContextMenu Web Components", () => {
 
             const openSpy = vi.fn<() => void>();
             const closeSpy = vi.fn<() => void>();
-            popover.addEventListener("ui-popover-open", openSpy);
-            popover.addEventListener("ui-popover-close", closeSpy);
+            popover.addEventListener("ui-open", openSpy);
+            popover.addEventListener("ui-close", closeSpy);
 
             expect(popover.open).toBe(false);
             popover.show();
@@ -112,7 +112,7 @@ describe("UIPopover and UIContextMenu Web Components", () => {
             container.appendChild(menu);
 
             const openSpy = vi.fn<(e: Event) => void>();
-            menu.addEventListener("ui-context-menu-open", openSpy);
+            menu.addEventListener("ui-open", openSpy);
 
             // Dispatch contextmenu event on target
             const contextEvent = new MouseEvent("contextmenu", {
@@ -153,7 +153,7 @@ describe("UIPopover and UIContextMenu Web Components", () => {
             container.appendChild(menu);
 
             const selectSpy = vi.fn<(e: Event) => void>();
-            menu.addEventListener("ui-menu-select", selectSpy);
+            menu.addEventListener("ui-select", selectSpy);
 
             menu.showAt(50, 50);
             expect(menu.open).toBe(true);
@@ -279,7 +279,7 @@ describe("UIPopover and UIContextMenu Web Components", () => {
             expect(menu.isDropdown).toBe(false);
 
             const selectSpy = vi.fn();
-            menu.addEventListener("ui-menu-select", selectSpy);
+            menu.addEventListener("ui-select", selectSpy);
             item.click();
 
             expect(selectSpy).toHaveBeenCalledWith(
@@ -313,7 +313,7 @@ describe("UIPopover and UIContextMenu Web Components", () => {
 
             // Item click emits event and closes dropdown
             const selectSpy = vi.fn();
-            menu.addEventListener("ui-menu-select", selectSpy);
+            menu.addEventListener("ui-select", selectSpy);
             item.click();
 
             expect(selectSpy).toHaveBeenCalled();

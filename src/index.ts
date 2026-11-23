@@ -48,6 +48,7 @@ export {
   type HeaderSurface,
 } from './headerSurface.ts'
 export * from './constants.ts'
+export * from './events.ts'
 export * from './dataCollection.utils.ts'
 export { announceLive } from './announcer.ts'
 
@@ -72,8 +73,12 @@ export { UITooltip } from './components/tooltip.component.ts'
 export { UIDialog } from './components/dialog.component.ts'
 export { UITable } from './components/table.component.ts'
 export { UIPagination, type PaginationMode, type StepperFormat } from './components/pagination.component.ts'
-export { UIList } from './components/list.component.ts'
-export { UIStructForm } from './components/struct-form.component.ts'
+export { UIList, type ItemRenderer } from './components/list.component.ts'
+export {
+  UIStructForm,
+  type StructFormField,
+  type StructFormWidgetType,
+} from './components/struct-form.component.ts'
 export { UIProgress } from './components/progress.component.ts'
 export { UIDrawer, type DrawerPlacement } from './components/drawer.component.ts'
 export { UISegmentedControl, UISegmentItem } from './components/segmented-control.component.ts'

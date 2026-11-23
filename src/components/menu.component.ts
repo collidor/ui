@@ -1,6 +1,7 @@
 import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { bool, UIElement } from "../base.element.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
+import { UI_EVENTS, type UIMenuEventMap } from "../events.ts";
 
 export class UIMenuDivider extends UIElement {
     static override styles: CSSResultGroup = css`
@@ -154,7 +155,7 @@ if (!customElements.get(UI_TAG_NAMES.MENU_ITEM)) {
     customElements.define(UI_TAG_NAMES.MENU_ITEM, UIMenuItem);
 }
 
-export class UIMenu extends UIElement {
+export class UIMenu extends UIElement<UIMenuEventMap> {
     static override properties: PropertyDeclarations = {
         open: bool(),
         trigger: { type: String, reflect: true },
@@ -218,7 +219,7 @@ export class UIMenu extends UIElement {
         if (!item || !this.contains(item)) return;
         event.stopPropagation();
         if (item.disabled) return;
-        this.emit("ui-menu-select", { value: item.value, item });
+        this.emit(UI_EVENTS.SELECT, { value: item.value, item });
         if (this.isDropdown) {
             this.close();
         }
@@ -261,7 +262,7 @@ export class UIMenu extends UIElement {
             if (currentIndex !== -1 && items[currentIndex]) {
                 event.preventDefault();
                 const item = items[currentIndex];
-                this.emit("ui-menu-select", { value: item.value, item });
+                this.emit(UI_EVENTS.SELECT, { value: item.value, item });
                 this.close();
             }
             return;
@@ -367,6 +368,9 @@ export class UIMenu extends UIElement {
         const closed = !this.open && previous === true;
         if (opened) {
             this.#syncPanel(true);
+            if (this.isDropdown) {
+                this.emit(UI_EVENTS.OPEN, {});
+            }
             requestAnimationFrame(() => {
                 const items = this.#getItems();
                 if (items.length > 0) {
@@ -378,6 +382,9 @@ export class UIMenu extends UIElement {
             });
         } else if (closed) {
             this.#syncPanel(false);
+            if (this.isDropdown) {
+                this.emit(UI_EVENTS.CLOSE, {});
+            }
         }
     }
 

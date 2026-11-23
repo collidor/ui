@@ -245,16 +245,16 @@ describe("UI Web Components Library", () => {
     });
 
     describe("UIField (<ui-field>)", () => {
-        it("should render label, required asterisk, and error messages", () => {
+        it("should render label, required asterisk, and error messages in Light DOM", () => {
             const field = document.createElement(UI_TAG_NAMES.FIELD) as UIField;
             field.setAttribute("label", "Frequency");
             field.setAttribute("required", "");
             field.setAttribute("error", "Invalid value");
             document.body.appendChild(field);
 
-            expect(field.shadowRoot?.querySelector(".required-star"))
-                .toBeTruthy();
-            expect(field.shadowRoot?.querySelector(".error-text")?.textContent)
+            expect(field.shadowRoot).toBeNull();
+            expect(field.querySelector(".required-star")).toBeTruthy();
+            expect(field.querySelector(".error-text")?.textContent)
                 .toBe("Invalid value");
 
             document.body.removeChild(field);
@@ -495,8 +495,8 @@ describe("UI Web Components Library", () => {
             expect(sortSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
                     detail: expect.objectContaining({
-                        column: "power",
-                        direction: "asc",
+                        sortBy: "power",
+                        sortDirection: "asc",
                     }),
                 }),
             );
@@ -697,9 +697,10 @@ describe("UI Web Components Library", () => {
             document.body.removeChild(table);
         });
 
-        it("should issue getPage command whenever sort or page changes", async () => {
+        it("should emit ui-page-request when remote or fetchPage is configured and support resolve()", async () => {
             const table = document.createElement(UI_TAG_NAMES.TABLE) as UITable;
             table.setAttribute("pagination", "");
+            table.remote = true;
             table.pageSize = 10;
             table.total = 20;
             table.columns = [
@@ -712,31 +713,37 @@ describe("UI Web Components Library", () => {
             ];
             document.body.appendChild(table);
 
-            const getPageSpy = vi.fn<() => void>();
-            table.addEventListener("ui-get-page", getPageSpy);
+            const pageRequestSpy = vi.fn<() => void>();
+            table.addEventListener("ui-page-request", pageRequestSpy);
 
-            // When sorting changes, a getPage command must be issued with page 1
+            // When sorting changes on a remote table, a page request is issued with page 1
             table.sort("score", "desc");
-            expect(getPageSpy).toHaveBeenCalledWith(
+            expect(pageRequestSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
                     detail: expect.objectContaining({
                         page: 1,
                         pageSize: 10,
                         sortBy: "score",
                         sortDirection: "desc",
+                        reason: "sort",
+                        append: false,
+                        resolve: expect.any(Function),
                     }),
                 }),
             );
 
-            // When page changes, getPage is also issued
+            // When page changes, page request is also issued
             table.setPage(2);
-            expect(getPageSpy).toHaveBeenCalledWith(
+            expect(pageRequestSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
                     detail: expect.objectContaining({
                         page: 2,
                         pageSize: 10,
                         sortBy: "score",
                         sortDirection: "desc",
+                        reason: "page",
+                        append: false,
+                        resolve: expect.any(Function),
                     }),
                 }),
             );
@@ -1018,7 +1025,7 @@ describe("UI Web Components Library", () => {
             document.body.removeChild(list);
         });
 
-        it("should support pagination and emit getPage events", () => {
+        it("should support pagination and only emit ui-page-request when remote or called explicitly", () => {
             const list = document.createElement(UI_TAG_NAMES.LIST) as UIList;
             list.pagination = true;
             list.pageSize = 2;
@@ -1030,28 +1037,41 @@ describe("UI Web Components Library", () => {
             expect(items?.length).toBe(2);
             expect(items?.[0].textContent).toContain("Bronze Xiphos");
 
-            const getPageSpy = vi.fn<(e: Event) => void>();
-            list.addEventListener("ui-get-page", getPageSpy);
+            const pageRequestSpy = vi.fn<(e: Event) => void>();
+            const pageChangeSpy = vi.fn<(e: Event) => void>();
+            list.addEventListener("ui-page-request", pageRequestSpy);
+            list.addEventListener("ui-page-change", pageChangeSpy);
 
-            // Next page
+            // Client-side next page emits ui-page-change, not ui-page-request
             list.nextPage();
             expect(list.page).toBe(2);
             items = list.shadowRoot?.querySelectorAll(".list-item");
             expect(items?.length).toBe(2);
             expect(items?.[0].textContent).toContain("Spartan Hoplon");
-            expect(getPageSpy).toHaveBeenCalled();
+            expect(pageChangeSpy).toHaveBeenCalledTimes(1);
+            expect(pageRequestSpy).not.toHaveBeenCalled();
 
-            // Sort
+            // Sort resets to page 1 and sorts descending
             list.sort("price", "desc");
             expect(list.sortBy).toBe("price");
             expect(list.sortDirection).toBe("desc");
-            items = list.shadowRoot?.querySelectorAll(".list-item");
-            expect(items?.[0].textContent).toContain("Spartan Hoplon"); // page 2 of sorted descending: [800, 450] (p1), [200, 120] (p2)
-
-            list.setPage(1);
+            expect(list.page).toBe(1);
             items = list.shadowRoot?.querySelectorAll(".list-item");
             expect(items?.[0].textContent).toContain("Laurel Wreath");
             expect(items?.[1].textContent).toContain("Mycenaean Cuirass");
+
+            // Remote mode emits ui-page-request
+            list.remote = true;
+            list.nextPage();
+            expect(pageRequestSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    detail: expect.objectContaining({
+                        page: 2,
+                        reason: "page",
+                        append: false,
+                    }),
+                }),
+            );
 
             document.body.removeChild(list);
         });
@@ -1221,8 +1241,8 @@ describe("UI Web Components Library", () => {
 
             const openSpy = vi.fn<(e: Event) => void>();
             const closeSpy = vi.fn<(e: Event) => void>();
-            drawer.addEventListener("ui-drawer-open", openSpy);
-            drawer.addEventListener("ui-drawer-close", closeSpy);
+            drawer.addEventListener("ui-open", openSpy);
+            drawer.addEventListener("ui-close", closeSpy);
 
             drawer.show();
             expect(drawer.open).toBe(true);
@@ -1281,7 +1301,7 @@ describe("UI Web Components Library", () => {
             expect(title?.textContent).toBe("Low Resources");
 
             const closeSpy = vi.fn<(e: Event) => void>();
-            alert.addEventListener("ui-alert-close", closeSpy);
+            alert.addEventListener("ui-dismiss", closeSpy);
             alert.dismiss();
             expect(closeSpy).toHaveBeenCalled();
         });
@@ -1328,7 +1348,7 @@ describe("UI Web Components Library", () => {
             document.body.appendChild(menu);
 
             const selectSpy = vi.fn<(e: Event) => void>();
-            menu.addEventListener("ui-menu-select", selectSpy);
+            menu.addEventListener("ui-select", selectSpy);
 
             item1.click();
             expect(selectSpy).toHaveBeenCalledWith(
@@ -1379,8 +1399,8 @@ describe("UI Web Components Library", () => {
 
             const selectSpy = vi.fn<(e: Event) => void>();
             const closeSpy = vi.fn<(e: Event) => void>();
-            chip.addEventListener("ui-chip-select", selectSpy);
-            chip.addEventListener("ui-chip-close", closeSpy);
+            chip.addEventListener("ui-select", selectSpy);
+            chip.addEventListener("ui-dismiss", closeSpy);
 
             chip.toggle();
             expect(chip.selected).toBe(true);

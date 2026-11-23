@@ -2,8 +2,9 @@ import { css, html, nothing, type PropertyValues, type CSSResultGroup, type Prop
 import { live } from "lit/directives/live.js";
 import { bool, UIElement } from "../base.element.ts";
 import { type Size, UI_TAG_NAMES } from "../constants.ts";
+import { UI_EVENTS, type UINumberInputEventMap } from "../events.ts";
 
-export class UINumberInput extends UIElement {
+export class UINumberInput extends UIElement<UINumberInputEventMap> {
     static override properties: PropertyDeclarations = {
         value: { type: Number, reflect: true },
         min: { type: Number, reflect: true, useDefault: true },
@@ -76,9 +77,17 @@ export class UINumberInput extends UIElement {
 
             .number-wrapper.invalid:focus-within:not(.disabled) {
                 border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
-                box-shadow:
-                    0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25)),
-                    0 0 0 4px var(--ui-color-danger-subtle, oklch(0.65 0.22 25 / 0.3));
+                box-shadow: 0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25));
+                outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+                outline-offset: 2px;
+            }
+
+            @media (forced-colors: active) {
+                .number-wrapper:focus-within:not(.disabled),
+                .number-wrapper.invalid:focus-within:not(.disabled) {
+                    outline: 2px solid Highlight;
+                    outline-offset: 2px;
+                }
             }
 
                 /* --- Golden Ratio Sizing --- */
@@ -235,8 +244,8 @@ export class UINumberInput extends UIElement {
 
                 #emitChange(): void {
                     const value = this.value;
-                    this.emit("ui-input", { value });
-                    this.emit("ui-change", { value });
+                    this.emit(UI_EVENTS.INPUT, { value });
+                    this.emit(UI_EVENTS.CHANGE, { value });
                 }
 
                 #onInput = (event: Event): void => {
@@ -246,7 +255,7 @@ export class UINumberInput extends UIElement {
                     const parsed = parseFloat(input.value);
                     if (Number.isNaN(parsed)) return;
                     this.value = parsed;
-                    this.emit("ui-input", { value: this.value });
+                    this.emit(UI_EVENTS.INPUT, { value: this.value });
                 };
 
                 #onChange = (event: Event): void => {
@@ -268,16 +277,24 @@ export class UINumberInput extends UIElement {
                     }
                 };
 
+                #onStepMouseDown = (event: MouseEvent): void => {
+                    event.preventDefault();
+                };
+
                 #onStepUp = (event: Event): void => {
                     event.preventDefault();
                     event.stopPropagation();
+                    if (this.disabled) return;
                     this.stepUp();
+                    this.focus();
                 };
 
                 #onStepDown = (event: Event): void => {
                     event.preventDefault();
                     event.stopPropagation();
+                    if (this.disabled) return;
                     this.stepDown();
+                    this.focus();
                 };
 
                 protected override willUpdate(
@@ -333,9 +350,12 @@ export class UINumberInput extends UIElement {
                                 <button
                                     class="step-btn btn-up"
                                     type="button"
+                                    tabindex="-1"
+                                    aria-hidden="true"
                                     aria-label="Increment"
                                     ?disabled="${this.disabled}"
                                     part="step-up"
+                                    @mousedown="${this.#onStepMouseDown}"
                                     @click="${this.#onStepUp}"
                                 >
                                     ▲
@@ -343,9 +363,12 @@ export class UINumberInput extends UIElement {
                                 <button
                                     class="step-btn btn-down"
                                     type="button"
+                                    tabindex="-1"
+                                    aria-hidden="true"
                                     aria-label="Decrement"
                                     ?disabled="${this.disabled}"
                                     part="step-down"
+                                    @mousedown="${this.#onStepMouseDown}"
                                     @click="${this.#onStepDown}"
                                 >
                                     ▼

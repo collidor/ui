@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import "../../index.ts";
 import { UI_TAG_NAMES } from "../../constants.ts";
-import { UIPagination, UITable } from "../../index.ts";
+import { UIList, UIPagination, UITable } from "../../index.ts";
 import { mount, record } from "../harness.ts";
 
 describe("UIPagination Component", () => {
@@ -215,7 +215,7 @@ describe("UIPagination Component", () => {
         expect(pageBtns?.length).toBe(3); // Pages 1, 2, 3
     });
 
-    it("emits ui-page-size-change and ui-page-change when page size is changed", async () => {
+    it("emits ui-page-size-change (without duplicate ui-page-change) when page size is changed", async () => {
         const pagination = mount(
             document.createElement(UI_TAG_NAMES.PAGINATION) as UIPagination,
         );
@@ -224,7 +224,7 @@ describe("UIPagination Component", () => {
         pagination.page = 1;
         await pagination.updateComplete;
 
-        const sizeEvents = record<{ pageSize: number; page: number }>(
+        const sizeEvents = record<{ pageSize: number; page: number; totalPages: number; total: number }>(
             pagination,
             "ui-page-size-change",
         );
@@ -242,9 +242,13 @@ describe("UIPagination Component", () => {
 
         expect(pagination.pageSize).toBe(25);
         expect(sizeEvents.length).toBe(1);
-        expect(sizeEvents[0].detail.pageSize).toBe(25);
-        expect(pageEvents.length).toBe(1);
-        expect(pageEvents[0].detail.pageSize).toBe(25);
+        expect(sizeEvents[0].detail).toEqual({
+            page: 1,
+            pageSize: 25,
+            totalPages: 4,
+            total: 100,
+        });
+        expect(pageEvents.length).toBe(0);
     });
 
     it("integrates seamlessly with UITable when table pagination is enabled", async () => {
@@ -283,5 +287,68 @@ describe("UIPagination Component", () => {
         expect(rows?.length).toBe(2);
         expect(rows?.[0].textContent).toContain("Gamma");
         expect(rows?.[1].textContent).toContain("Delta");
+    });
+
+    it("defines a focus outline over the entire pagination button group (all pages and buttons)", () => {
+        const cssText = Array.isArray(UIPagination.styles)
+            ? UIPagination.styles.map((s) => s.toString()).join("\n")
+            : UIPagination.styles.toString();
+
+        expect(cssText).toContain(".pagination-combo-btn:has(.page-btn:focus-visible)");
+        expect(cssText).toMatch(/\.pagination-combo-btn:has\(\.page-btn:focus-visible\)\s*\{[^}]*outline:/);
+        expect(cssText).toContain(".page-btn.active:focus-visible");
+    });
+
+    it("preserves focus inside the pagination group when the focused prev/next button becomes disabled", async () => {
+        const pagination = mount(
+            document.createElement(UI_TAG_NAMES.PAGINATION) as UIPagination,
+        );
+        pagination.total = 20;
+        pagination.pageSize = 10;
+        pagination.page = 2;
+        await pagination.updateComplete;
+
+        const prevBtn = pagination.shadowRoot?.querySelector<HTMLButtonElement>(".page-btn.page-prev")!;
+        prevBtn.focus();
+        expect(pagination.shadowRoot?.activeElement).toBe(prevBtn);
+
+        // Activating prev moves to page 1, disabling prevBtn
+        prevBtn.click();
+        await pagination.updateComplete;
+
+        expect(pagination.page).toBe(1);
+        expect(prevBtn.disabled).toBe(true);
+
+        const activePageBtn = pagination.shadowRoot?.querySelector<HTMLButtonElement>(".page-btn.active")!;
+        expect(activePageBtn.getAttribute("tabindex")).toBe("0");
+        expect(pagination.shadowRoot?.activeElement).toBe(activePageBtn);
+    });
+
+    it("applies group focus outline and roving tabindex to UIList pagination controls", async () => {
+        const cssText = Array.isArray(UIList.styles)
+            ? UIList.styles.map((s) => s.toString()).join("\n")
+            : UIList.styles.toString();
+
+        expect(cssText).toContain(".pagination-controls:has(.page-btn:focus-visible)");
+        expect(cssText).toMatch(/\.pagination-controls:has\(\.page-btn:focus-visible\)\s*\{[^}]*outline:/);
+
+        const list = mount(document.createElement(UI_TAG_NAMES.LIST) as UIList);
+        list.pagination = true;
+        list.pageSize = 2;
+        list.data = [
+            { id: "1", name: "One" },
+            { id: "2", name: "Two" },
+            { id: "3", name: "Three" },
+            { id: "4", name: "Four" },
+        ];
+        await list.updateComplete;
+
+        const buttons = Array.from(
+            list.shadowRoot?.querySelectorAll<HTMLButtonElement>(".pagination-controls .page-btn") ?? [],
+        );
+        expect(buttons.length).toBeGreaterThan(2);
+        const tabStops = buttons.filter((b) => b.getAttribute("tabindex") === "0");
+        expect(tabStops).toHaveLength(1);
+        expect(tabStops[0].classList.contains("active")).toBe(true);
     });
 });

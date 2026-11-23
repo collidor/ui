@@ -2,8 +2,9 @@ import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations, typ
 import { live } from 'lit/directives/live.js'
 import { UIElement, bool } from '../base.element.ts'
 import { UI_TAG_NAMES, type Size } from '../constants.ts'
+import { UI_EVENTS, type UISelectEventMap } from '../events.ts'
 
-export class UISelect extends UIElement {
+export class UISelect extends UIElement<UISelectEventMap> {
   static override properties: PropertyDeclarations = {
     value: { type: String, reflect: true },
     options: { type: Array },
@@ -68,9 +69,17 @@ export class UISelect extends UIElement {
 
     .select-wrapper.invalid:focus-within:not(.disabled) {
       border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
-      box-shadow:
-        0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25)),
-        0 0 0 4px var(--ui-color-danger-subtle, oklch(0.65 0.22 25 / 0.3));
+      box-shadow: 0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25));
+      outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+      outline-offset: 2px;
+    }
+
+    @media (forced-colors: active) {
+      .select-wrapper:focus-within:not(.disabled),
+      .select-wrapper.invalid:focus-within:not(.disabled) {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+      }
     }
 
     /* --- Golden Ratio Strict Relative Sizing & Padding --- */
@@ -329,7 +338,7 @@ export class UISelect extends UIElement {
     const select = event.currentTarget
     if (!(select instanceof HTMLSelectElement)) return
     this.value = select.value
-    this.emit('ui-change', { value: this.value })
+    this.emit(UI_EVENTS.CHANGE, { value: this.value })
   }
 
   #onSlotChange = (): void => {
@@ -500,7 +509,7 @@ export class UISelect extends UIElement {
         ></select>
         ${this.loading
           ? html`<span class="select-spinner" part="spinner" role="status" aria-label="Loading options"></span>`
-          : html`<div class="fallback-chevron" part="chevron">▼</div>`}
+          : html`<div class="fallback-chevron" part="chevron" aria-hidden="true">▼</div>`}
         <div class="hidden-slot"><slot @slotchange=${this.#onSlotChange}></slot></div>
       </div>
     `

@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import "../../index.ts";
 import { UI_TAG_NAMES } from "../../constants.ts";
+import {
+    UICombobox,
+    UIInput,
+    UINumberInput,
+    UISelect,
+    UIStructForm,
+} from "../../index.ts";
 import type {
     UIAccordionItem,
     UIAlert,
     UIButton,
     UIChip,
+    UIChipGroup,
     UIField,
-    UIInput,
-    UINumberInput,
     UISegmentedControl,
     UISegmentItem,
     UISwitch,
@@ -96,8 +102,8 @@ describe("control contract", () => {
         field.label = "Name";
         field.error = '<img id="xss" src="x">';
 
-        expect(field.shadowRoot?.querySelector("#xss")).toBeNull();
-        expect(field.shadowRoot?.textContent).toContain(
+        expect(field.querySelector("#xss")).toBeNull();
+        expect(field.textContent).toContain(
             '<img id="xss" src="x">',
         );
     });
@@ -151,6 +157,75 @@ describe("control contract", () => {
         expect(input.value).toBe(12);
         expect(changes.map((event) => event.detail)).toEqual([{ value: 12 }]);
         expect(legacy).toHaveLength(0);
+    });
+
+    it("excludes number input stepper arrows from Tab order and controls them via ArrowUp/ArrowDown", async () => {
+        const input = mount(
+            document.createElement(UI_TAG_NAMES.NUMBER_INPUT) as UINumberInput,
+        );
+        input.value = 10;
+        input.min = 0;
+        input.max = 20;
+        input.step = 5;
+        await input.updateComplete;
+
+        const field = input.shadowRoot?.querySelector<HTMLInputElement>('input[type="number"]');
+        const upBtn = input.shadowRoot?.querySelector<HTMLButtonElement>(".btn-up");
+        const downBtn = input.shadowRoot?.querySelector<HTMLButtonElement>(".btn-down");
+        if (!field || !upBtn || !downBtn) throw new Error("missing number input controls");
+
+        // Stepper arrows must not be Tab stops
+        expect(upBtn.getAttribute("tabindex")).toBe("-1");
+        expect(downBtn.getAttribute("tabindex")).toBe("-1");
+        expect(upBtn.getAttribute("aria-hidden")).toBe("true");
+        expect(downBtn.getAttribute("aria-hidden")).toBe("true");
+
+        // ArrowUp / ArrowDown on the input step the value and prevent default
+        const upEvent = new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true, cancelable: true });
+        expect(field.dispatchEvent(upEvent)).toBe(false);
+        expect(input.value).toBe(15);
+
+        const downEvent = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+        expect(field.dispatchEvent(downEvent)).toBe(false);
+        expect(input.value).toBe(10);
+
+        // Clicking a stepper button steps and keeps focus on the numeric input
+        const mouseDownEvent = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+        expect(upBtn.dispatchEvent(mouseDownEvent)).toBe(false);
+        upBtn.click();
+        expect(input.value).toBe(15);
+        expect(input.shadowRoot?.activeElement).toBe(field);
+    });
+
+    it("hides the decorative chevron arrow in UISelect from assistive technology", async () => {
+        const select = mount(document.createElement(UI_TAG_NAMES.SELECT));
+        await select.updateComplete;
+
+        const chevron = select.shadowRoot?.querySelector(".fallback-chevron");
+        expect(chevron?.getAttribute("aria-hidden")).toBe("true");
+    });
+
+    it("renders a distinct outer focus outline on invalid/error fields without losing error border styling", () => {
+        const components = [
+            { ctor: UIInput, selector: ".input-wrapper.invalid:focus-within:not(.disabled)" },
+            { ctor: UINumberInput, selector: ".number-wrapper.invalid:focus-within:not(.disabled)" },
+            { ctor: UISelect, selector: ".select-wrapper.invalid:focus-within:not(.disabled)" },
+            { ctor: UICombobox, selector: ".combobox-container.invalid:focus-within:not(.disabled)" },
+            { ctor: UIStructForm, selector: ".form-textarea.invalid:focus" },
+            { ctor: UIStructForm, selector: ".tags-container.invalid:focus-within" },
+        ];
+
+        for (const { ctor, selector } of components) {
+            const cssText = Array.isArray(ctor.styles)
+                ? ctor.styles.map((s) => s.toString()).join("\n")
+                : ctor.styles.toString();
+            const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const match = cssText.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`));
+            expect(match, `missing rule for ${selector}`).not.toBeNull();
+            expect(match![1]).toContain("outline: 2px solid");
+            expect(match![1]).toContain("outline-offset: 2px");
+            expect(match![1]).toContain("--ui-color-danger");
+        }
     });
 
     it("toggles a switch on and off with one ui-change each time", () => {
@@ -256,7 +331,7 @@ describe("control contract", () => {
                 UI_TAG_NAMES.ACCORDION_ITEM,
             ) as UIAccordionItem,
         );
-        const changes = record<{ open: boolean }>(item, "ui-accordion-change");
+        const changes = record<{ open: boolean }>(item, "ui-toggle");
 
         item.toggle();
         expect(item.open).toBe(true);
@@ -274,9 +349,9 @@ describe("control contract", () => {
         chip.selectable = true;
         const selected = record<{ value: string; selected: boolean }>(
             chip,
-            "ui-chip-select",
+            "ui-select",
         );
-        const closed = record<{ value: string }>(chip, "ui-chip-close");
+        const closed = record<{ value: string }>(chip, "ui-dismiss");
 
         chip.toggle();
         expect(chip.selected).toBe(true);
@@ -292,13 +367,112 @@ describe("control contract", () => {
         }]);
     });
 
-    it("dismisses an alert once under ui-alert-close", () => {
+    it("manages roving tabindex, arrow navigation, and Delete dismiss in a chip group", () => {
+        const group = mount(
+            document.createElement(UI_TAG_NAMES.CHIP_GROUP) as UIChipGroup,
+        );
+        const makeChip = (
+            value: string,
+            opts: { selectable?: boolean; closable?: boolean } = {},
+        ) => {
+            const c = document.createElement(UI_TAG_NAMES.CHIP) as UIChip;
+            c.value = value;
+            c.textContent = value;
+            if (opts.selectable) c.selectable = true;
+            if (opts.closable) c.closable = true;
+            group.appendChild(c);
+            return c;
+        };
+
+        const staticChip = makeChip("static");
+        const first = makeChip("ts", { selectable: true });
+        const second = makeChip("lit", { selectable: true, closable: true });
+        const third = makeChip("a11y", { closable: true });
+
+        // Static chip is not focusable; only one interactive chip has tabindex="0"
+        expect(staticChip.hasAttribute("tabindex")).toBe(false);
+        expect(first.getAttribute("tabindex")).toBe("0");
+        expect(second.getAttribute("tabindex")).toBe("-1");
+        expect(third.getAttribute("tabindex")).toBe("-1");
+
+        // Close button inside chip group stays out of Tab order
+        expect(
+            second.shadowRoot?.querySelector(".chip-close-btn")?.getAttribute(
+                "tabindex",
+            ),
+        ).toBe("-1");
+
+        // ArrowRight moves roving tabindex & focus to second chip
+        first.focus();
+        first.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+        );
+        expect(document.activeElement).toBe(second);
+        expect(first.getAttribute("tabindex")).toBe("-1");
+        expect(second.getAttribute("tabindex")).toBe("0");
+
+        // End jumps to last interactive chip, ArrowRight wraps back to first
+        second.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "End", bubbles: true }),
+        );
+        expect(document.activeElement).toBe(third);
+        expect(third.getAttribute("tabindex")).toBe("0");
+
+        third.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+        );
+        expect(document.activeElement).toBe(first);
+
+        // Delete on second dismisses it and transfers focus to the next chip (third)
+        second.focus();
+        second.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Delete", bubbles: true }),
+        );
+        expect(second.isConnected).toBe(false);
+        expect(document.activeElement).toBe(third);
+        expect(third.getAttribute("tabindex")).toBe("0");
+        expect(first.getAttribute("tabindex")).toBe("-1");
+    });
+
+    it("keeps standalone closable chip focus clean and ignores close-button Enter/Space on host", async () => {
+        const closableOnly = mount(
+            document.createElement(UI_TAG_NAMES.CHIP) as UIChip,
+        );
+        closableOnly.closable = true;
+        closableOnly.textContent = "Removable";
+        await closableOnly.updateComplete;
+        expect(closableOnly.hasAttribute("tabindex")).toBe(false);
+
+        const both = mount(document.createElement(UI_TAG_NAMES.CHIP) as UIChip);
+        both.selectable = true;
+        both.closable = true;
+        both.textContent = "Filter";
+        await both.updateComplete;
+
+        const changes = record(both, "ui-change");
+        const closeBtn = both.shadowRoot?.querySelector(
+            ".chip-close-btn",
+        ) as HTMLButtonElement;
+        expect(closeBtn).toBeTruthy();
+
+        closeBtn.dispatchEvent(
+            new KeyboardEvent("keydown", {
+                key: "Enter",
+                bubbles: true,
+                composed: true,
+            }),
+        );
+        expect(changes).toHaveLength(0);
+        expect(both.selected).toBe(false);
+    });
+
+    it("dismisses an alert once under ui-dismiss", () => {
         const alert = mount(
             document.createElement(UI_TAG_NAMES.ALERT) as UIAlert,
         );
         alert.title = "<b>Heads up</b>";
         alert.closable = true;
-        const closed = record(alert, "ui-alert-close");
+        const closed = record(alert, "ui-dismiss");
         const legacy = record(alert, "close");
 
         expect(alert.shadowRoot?.querySelector("b")).toBeNull();

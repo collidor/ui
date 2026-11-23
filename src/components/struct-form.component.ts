@@ -1,6 +1,21 @@
-import { html, css, nothing, type CSSResultGroup, type PropertyDeclarations } from 'lit'
-import { UIElement, bool } from '../base.element.ts'
+import { html, nothing, unsafeCSS, type CSSResultGroup, type PropertyDeclarations } from 'lit'
+import { live } from 'lit/directives/live.js'
+import { UIElement, adoptLightStyles, bool } from '../base.element.ts'
 import { UI_TAG_NAMES } from '../constants.ts'
+import {
+  UI_EVENTS,
+  type StructFormChangeEventDetail,
+  type StructFormSubmitEventDetail,
+  type UIComboboxChangeEvent,
+  type UIComboboxPageRequestEvent,
+  type UIListPageRequestEvent,
+  type UIStepperChangeEvent,
+  type UIStructFormEventMap,
+  type UIStructFormSubmitEvent,
+  type UITablePageRequestEvent,
+  type UITableRowClickEvent,
+  type UITabsChangeEvent,
+} from '../events.ts'
 import './table.component.ts'
 import './dialog.component.ts'
 import './button.component.ts'
@@ -50,15 +65,7 @@ export interface StructFormField {
   descriptor?: unknown
 }
 
-export interface StructFormChangeEventDetail {
-  values: Record<string, unknown>
-  fieldKey: string
-  fieldValue: unknown
-}
-
-export interface StructFormSubmitEventDetail {
-  values: Record<string, unknown>
-}
+export type { StructFormChangeEventDetail, StructFormSubmitEventDetail }
 
 function getByDotPath(obj: any, path?: string): any {
   if (!path || !obj) return obj
@@ -138,7 +145,561 @@ function inferFormFieldFromDescriptor(key: string, fieldDesc: any): StructFormFi
   }
 }
 
-export class UIStructForm extends UIElement {
+const STRUCT_FORM_LIGHT_STYLES = `
+ui-struct-form {
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--ui-font-family, ui-sans-serif, system-ui);
+  width: 100%;
+}
+
+ui-struct-form[hidden] {
+  display: none !important;
+}
+
+ui-struct-form .struct-form-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-sm, 1em);
+  box-sizing: border-box;
+  background: var(--ui-card-bg, var(--ui-color-surface-elevated, oklch(0.22 0.025 260)));
+  color: var(--ui-card-color, var(--ui-color-text, oklch(0.96 0.01 260)));
+  border: none;
+  border-radius: var(--ui-radius-md, 0.236em);
+  padding: 0;
+  overflow: hidden;
+}
+
+ui-struct-form .struct-form-root.bordered {
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+  padding: var(--ui-space-sm, 1em);
+}
+
+/* Top Indeterminate Loader Bar */
+ui-struct-form .form-loader-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.19 230)) 20%, transparent);
+  overflow: hidden;
+  z-index: 20;
+  pointer-events: none;
+}
+
+ui-struct-form .form-loader-bar-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--ui-color-primary, oklch(0.65 0.19 230));
+  width: 40%;
+  animation: ui-form-indeterminate-bar 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes ui-form-indeterminate-bar {
+  0% {
+    left: -40%;
+    width: 40%;
+  }
+  50% {
+    left: 30%;
+    width: 50%;
+  }
+  100% {
+    left: 100%;
+    width: 40%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ui-struct-form .form-loader-bar-indicator {
+    animation-duration: 2s;
+  }
+}
+
+ui-struct-form .form-fields-container.layout-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs, 0.618em);
+}
+
+ui-struct-form .form-fields-container.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--ui-space-xs, 0.618em);
+}
+
+ui-struct-form .struct-form-root.dense .form-fields-container.layout-stacked,
+ui-struct-form .struct-form-root.dense .form-fields-container.layout-grid {
+  gap: var(--ui-space-3xs, 0.236em);
+}
+
+/* Layout Containers */
+ui-struct-form .form-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--ui-space-sm, 1em);
+  align-items: flex-start;
+  width: 100%;
+}
+
+ui-struct-form .form-row > * {
+  flex: 1 1 200px;
+}
+
+ui-struct-form .form-grid {
+  display: grid;
+  gap: var(--ui-space-sm, 1em);
+  width: 100%;
+}
+
+ui-struct-form .form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs, 0.618em);
+  padding: var(--ui-space-sm, 1em);
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+  border-radius: var(--ui-radius-md, 0.236em);
+  background: var(--ui-color-surface, oklch(0.20 0.02 260));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+ui-struct-form .form-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+}
+
+ui-struct-form .form-section-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+}
+
+ui-struct-form .form-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs, 0.618em);
+}
+
+/* Multi-Step Wizard */
+ui-struct-form .form-steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-sm, 1em);
+  width: 100%;
+}
+
+ui-struct-form .form-stepper-nav {
+  width: 100%;
+  border-bottom: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+  padding-bottom: var(--ui-space-sm, 1em);
+  margin-bottom: var(--ui-space-2xs, 0.382em);
+}
+
+ui-struct-form .stepper-list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  gap: var(--ui-space-xs, 0.618em);
+}
+
+ui-struct-form .stepper-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2xs, 0.382em);
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  flex: 1;
+}
+
+ui-struct-form .stepper-item:hover {
+  opacity: 0.95;
+}
+
+ui-struct-form .stepper-item.active {
+  opacity: 1;
+  font-weight: 600;
+}
+
+ui-struct-form .stepper-item.completed {
+  opacity: 0.85;
+}
+
+ui-struct-form .step-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ui-color-surface-elevated, oklch(0.25 0.03 260));
+  border: 2px solid var(--ui-color-border-subtle, oklch(0.35 0.03 260));
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+ui-struct-form .stepper-item.active .step-badge {
+  background: var(--ui-color-primary, oklch(0.65 0.20 260));
+  border-color: var(--ui-color-primary, oklch(0.65 0.20 260));
+  color: white;
+  box-shadow: 0 0 10px color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.20 260)) 50%, transparent);
+}
+
+ui-struct-form .stepper-item.completed .step-badge {
+  background: var(--ui-color-success, oklch(0.65 0.18 150));
+  border-color: var(--ui-color-success, oklch(0.65 0.18 150));
+  color: white;
+}
+
+ui-struct-form .step-label {
+  font-size: 0.85rem;
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+ui-struct-form .form-step-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-sm, 1em);
+  width: 100%;
+}
+
+ui-struct-form .form-step-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--ui-space-sm, 1em);
+  padding-top: var(--ui-space-sm, 1em);
+  border-top: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+}
+
+ui-struct-form .step-alert {
+  margin-bottom: var(--ui-space-xs, 0.618em);
+}
+
+ui-struct-form .step-error-list {
+  margin: 0.382em 0 0 1.236em;
+  padding: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* Tabs Container */
+ui-struct-form .form-tabs-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-sm, 1em);
+  width: 100%;
+}
+
+ui-struct-form .form-tabs-header {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+}
+
+ui-struct-form .form-tab-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+ui-struct-form .form-tab-btn:hover {
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+}
+
+ui-struct-form .form-tab-btn.active {
+  color: var(--ui-color-primary, oklch(0.65 0.20 260));
+  border-bottom-color: var(--ui-color-primary, oklch(0.65 0.20 260));
+  font-weight: 600;
+}
+
+ui-struct-form .form-tab-body {
+  padding: var(--ui-space-2xs, 0.382em) 0;
+}
+
+/* UI-Only Nodes */
+ui-struct-form .form-heading {
+  margin: var(--ui-space-2xs, 0.382em) 0 0 0;
+  font-weight: 700;
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+}
+
+ui-struct-form .form-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+}
+
+ui-struct-form .form-divider {
+  border: none;
+  border-top: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+  margin: var(--ui-space-xs, 0.618em) 0;
+  width: 100%;
+}
+
+ui-struct-form .form-spacer {
+  width: 100%;
+}
+
+ui-struct-form .form-alert {
+  margin-block-end: var(--ui-space-xs, 0.618em);
+  width: 100%;
+}
+
+ui-struct-form .form-button-container {
+  display: flex;
+  align-items: center;
+  margin: var(--ui-space-2xs, 0.382em) 0;
+}
+
+ui-struct-form .form-computed-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ui-space-2xs, 0.382em) var(--ui-space-xs, 0.618em);
+  background: var(--ui-color-surface-elevated, oklch(0.25 0.03 260));
+  border: 1px dashed var(--ui-color-border-subtle, oklch(0.35 0.03 260));
+  border-radius: var(--ui-radius-sm, 0.146em);
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+ui-struct-form .form-computed-box .computed-label {
+  font-weight: 600;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+}
+
+ui-struct-form .form-computed-box .computed-val {
+  font-family: var(--ui-font-family-mono, monospace);
+  font-weight: 700;
+  color: var(--ui-color-accent, oklch(0.8 0.15 150));
+}
+
+/* Table Widget using <ui-table> */
+ui-struct-form .form-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3xs, 0.236em);
+  width: 100%;
+  box-sizing: border-box;
+  margin-block-end: var(--ui-space-xs, 0.618em);
+}
+
+ui-struct-form .form-table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-xs, 0.618em);
+  margin-bottom: var(--ui-space-4xs, 0.146em);
+}
+
+ui-struct-form .form-table-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+ui-struct-form .form-table-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+ui-struct-form .form-table-desc {
+  font-size: 0.75rem;
+  color: var(--ui-color-text-muted, oklch(0.60 0.02 260));
+}
+
+ui-struct-form .form-table-wrapper ui-table {
+  width: 100%;
+  min-height: 140px;
+}
+
+ui-struct-form .table-foot-aggregations {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--ui-space-3xs, 0.236em) var(--ui-space-xs, 0.618em);
+  background: var(--ui-color-surface-elevated, oklch(0.21 0.02 260));
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
+  border-radius: var(--ui-radius-sm, 0.146em);
+}
+
+ui-struct-form .aggregations-list {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm, 1em);
+}
+
+ui-struct-form .aggregation-badge {
+  font-size: 0.8rem;
+  color: var(--ui-color-text, oklch(0.90 0.01 260));
+}
+
+ui-struct-form .aggregation-badge strong {
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+}
+
+ui-struct-form .subform-dialog-body {
+  padding: var(--ui-space-xs, 0.618em);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+ui-struct-form .subform-instance {
+  width: 100%;
+}
+
+/* Tags Widget */
+ui-struct-form .form-tags-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3xs, 0.236em);
+  width: 100%;
+}
+
+ui-struct-form .tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-3xs, 0.236em);
+  padding: var(--ui-space-3xs, 0.236em) var(--ui-space-2xs, 0.382em);
+  background: var(--ui-color-surface-elevated, oklch(0.22 0.025 260));
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.35 0.03 260 / 0.7));
+  border-radius: var(--ui-radius-sm, 0.146em);
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+ui-struct-form .tags-container:focus-within {
+  border-color: var(--ui-color-primary, oklch(0.65 0.20 260));
+  box-shadow:
+    0 0 0 1px var(--ui-color-primary, oklch(0.65 0.20 260)),
+    0 0 0 4px var(--ui-color-focus-ring, oklch(0.65 0.19 230 / 0.5));
+}
+
+ui-struct-form .tags-container.invalid {
+  border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
+}
+
+ui-struct-form .tags-container.invalid:focus-within {
+  border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
+  box-shadow: 0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25));
+  outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+  outline-offset: 2px;
+}
+
+ui-struct-form .tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.20 260)) 25%, var(--ui-color-surface, oklch(0.20 0.02 260)));
+  border: 1px solid color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.20 260)) 45%, transparent);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+}
+
+ui-struct-form .tag-del-btn {
+  background: transparent;
+  border: none;
+  color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+ui-struct-form .tag-del-btn:hover {
+  color: var(--ui-color-danger, oklch(0.65 0.22 25));
+}
+
+ui-struct-form .tag-input {
+  flex: 1 1 120px;
+  border: none;
+  background: transparent;
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+  font-size: 0.85rem;
+  padding: 4px;
+}
+
+ui-struct-form .tag-input:focus {
+  outline: none;
+}
+
+ui-struct-form .form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5em 0.75em;
+  background: var(--ui-color-surface-elevated, oklch(0.22 0.025 260));
+  border: 1px solid var(--ui-color-border-subtle, oklch(0.35 0.03 260 / 0.7));
+  border-radius: var(--ui-radius-sm, 0.146em);
+  color: var(--ui-color-text, oklch(0.96 0.01 260));
+  font-family: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+ui-struct-form .form-textarea:focus {
+  outline: none;
+  border-color: var(--ui-color-primary, oklch(0.65 0.20 260));
+  box-shadow:
+    0 0 0 1px var(--ui-color-primary, oklch(0.65 0.20 260)),
+    0 0 0 4px var(--ui-color-focus-ring, oklch(0.65 0.19 230 / 0.5));
+}
+
+ui-struct-form .form-textarea.invalid {
+  border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
+}
+
+ui-struct-form .form-textarea.invalid:focus {
+  border-color: var(--ui-color-danger, oklch(0.65 0.22 25));
+  box-shadow: 0 0 0 1px var(--ui-color-danger, oklch(0.65 0.22 25));
+  outline: 2px solid var(--ui-color-primary, oklch(0.65 0.19 230));
+  outline-offset: 2px;
+}
+
+ui-struct-form .form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space-xs, 0.618em);
+  margin-top: var(--ui-space-xs, 0.618em);
+}
+`
+
+export class UIStructForm<
+  TValues = Record<string, unknown>,
+> extends UIElement<UIStructFormEventMap<TValues>> {
   static override properties: PropertyDeclarations = {
     submitLabel: { type: String, attribute: 'submit-label', reflect: true },
     bordered: bool(),
@@ -154,525 +715,11 @@ export class UIStructForm extends UIElement {
     ariaLabel: { type: String, attribute: 'aria-label' },
   }
 
-  static override styles: CSSResultGroup = css`
-    :host {
-      display: block;
-      box-sizing: border-box;
-      font-family: var(--ui-font-family, ui-sans-serif, system-ui);
-      width: 100%;
-    }
-
-    :host([hidden]) {
-      display: none !important;
-    }
-
-    .struct-form-root {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-sm, 1em);
-      box-sizing: border-box;
-      background: var(--ui-card-bg, var(--ui-color-surface-elevated, oklch(0.22 0.025 260)));
-      color: var(--ui-card-color, var(--ui-color-text, oklch(0.96 0.01 260)));
-      border: none;
-      border-radius: var(--ui-radius-md, 0.236em);
-      padding: 0;
-      overflow: hidden;
-    }
-
-    .struct-form-root.bordered {
-      border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-      padding: var(--ui-space-sm, 1em);
-    }
-
-    /* Top Indeterminate Loader Bar */
-    .form-loader-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.19 230)) 20%, transparent);
-      overflow: hidden;
-      z-index: 20;
-      pointer-events: none;
-    }
-
-    .form-loader-bar-indicator {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      background: var(--ui-color-primary, oklch(0.65 0.19 230));
-      width: 40%;
-      animation: form-indeterminate-bar 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    }
-
-    @keyframes form-indeterminate-bar {
-      0% {
-        left: -40%;
-        width: 40%;
-      }
-      50% {
-        left: 30%;
-        width: 50%;
-      }
-      100% {
-        left: 100%;
-        width: 40%;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .form-loader-bar-indicator {
-        animation-duration: 2s;
-      }
-    }
-
-    .form-fields-container.layout-stacked {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-xs, 0.618em);
-    }
-
-    .form-fields-container.layout-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: var(--ui-space-xs, 0.618em);
-    }
-
-    .struct-form-root.dense .form-fields-container.layout-stacked,
-    .struct-form-root.dense .form-fields-container.layout-grid {
-      gap: var(--ui-space-3xs, 0.236em);
-    }
-
-    /* Layout Containers */
-    .form-row {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: var(--ui-space-sm, 1em);
-      align-items: flex-start;
-      width: 100%;
-    }
-
-    .form-row > * {
-      flex: 1 1 200px;
-    }
-
-    .form-grid {
-      display: grid;
-      gap: var(--ui-space-sm, 1em);
-      width: 100%;
-    }
-
-    .form-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-xs, 0.618em);
-      padding: var(--ui-space-sm, 1em);
-      border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-      border-radius: var(--ui-radius-md, 0.236em);
-      background: var(--ui-color-surface, oklch(0.20 0.02 260));
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .form-section-title {
-      margin: 0;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-    }
-
-    .form-section-desc {
-      margin: 0;
-      font-size: 0.8rem;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-    }
-
-    .form-section-body {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-xs, 0.618em);
-    }
-
-    /* Multi-Step Wizard */
-    .form-steps-container {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-sm, 1em);
-      width: 100%;
-    }
-
-    .form-stepper-nav {
-      width: 100%;
-      border-bottom: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-      padding-bottom: var(--ui-space-sm, 1em);
-      margin-bottom: var(--ui-space-2xs, 0.382em);
-    }
-
-    .stepper-list {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      width: 100%;
-      gap: var(--ui-space-xs, 0.618em);
-    }
-
-    .stepper-item {
-      display: flex;
-      align-items: center;
-      gap: var(--ui-space-2xs, 0.382em);
-      cursor: pointer;
-      user-select: none;
-      opacity: 0.6;
-      transition: opacity 0.2s;
-      flex: 1;
-    }
-
-    .stepper-item:hover {
-      opacity: 0.95;
-    }
-
-    .stepper-item.active {
-      opacity: 1;
-      font-weight: 600;
-    }
-
-    .stepper-item.completed {
-      opacity: 0.85;
-    }
-
-    .step-badge {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: var(--ui-color-surface-elevated, oklch(0.25 0.03 260));
-      border: 2px solid var(--ui-color-border-subtle, oklch(0.35 0.03 260));
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .stepper-item.active .step-badge {
-      background: var(--ui-color-primary, oklch(0.65 0.20 260));
-      border-color: var(--ui-color-primary, oklch(0.65 0.20 260));
-      color: white;
-      box-shadow: 0 0 10px color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.20 260)) 50%, transparent);
-    }
-
-    .stepper-item.completed .step-badge {
-      background: var(--ui-color-success, oklch(0.65 0.18 150));
-      border-color: var(--ui-color-success, oklch(0.65 0.18 150));
-      color: white;
-    }
-
-    .step-label {
-      font-size: 0.85rem;
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .form-step-content {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-sm, 1em);
-      width: 100%;
-    }
-
-    .form-step-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: var(--ui-space-sm, 1em);
-      padding-top: var(--ui-space-sm, 1em);
-      border-top: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-    }
-
-    .step-alert {
-      margin-bottom: var(--ui-space-xs, 0.618em);
-    }
-
-    .step-error-list {
-      margin: 0.382em 0 0 1.236em;
-      padding: 0;
-      font-size: 0.82rem;
-      line-height: 1.4;
-    }
-
-    /* Tabs Container */
-    .form-tabs-container {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-sm, 1em);
-      width: 100%;
-    }
-
-    .form-tabs-header {
-      display: flex;
-      gap: 4px;
-      border-bottom: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-    }
-
-    .form-tab-btn {
-      padding: 8px 16px;
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .form-tab-btn:hover {
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-    }
-
-    .form-tab-btn.active {
-      color: var(--ui-color-primary, oklch(0.65 0.20 260));
-      border-bottom-color: var(--ui-color-primary, oklch(0.65 0.20 260));
-      font-weight: 600;
-    }
-
-    .form-tab-body {
-      padding: var(--ui-space-2xs, 0.382em) 0;
-    }
-
-    /* UI-Only Nodes */
-    .form-heading {
-      margin: var(--ui-space-2xs, 0.382em) 0 0 0;
-      font-weight: 700;
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-    }
-
-    .form-text {
-      margin: 0;
-      font-size: 0.875rem;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-    }
-
-    .form-divider {
-      border: none;
-      border-top: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-      margin: var(--ui-space-xs, 0.618em) 0;
-      width: 100%;
-    }
-
-    .form-spacer {
-      width: 100%;
-    }
-
-    .form-alert {
-      margin-block-end: var(--ui-space-xs, 0.618em);
-      width: 100%;
-    }
-
-    .form-button-container {
-      display: flex;
-      align-items: center;
-      margin: var(--ui-space-2xs, 0.382em) 0;
-    }
-
-    .form-computed-box {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: var(--ui-space-2xs, 0.382em) var(--ui-space-xs, 0.618em);
-      background: var(--ui-color-surface-elevated, oklch(0.25 0.03 260));
-      border: 1px dashed var(--ui-color-border-subtle, oklch(0.35 0.03 260));
-      border-radius: var(--ui-radius-sm, 0.146em);
-      font-size: 0.85rem;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .form-computed-box .computed-label {
-      font-weight: 600;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-    }
-
-    .form-computed-box .computed-val {
-      font-family: var(--ui-font-family-mono, monospace);
-      font-weight: 700;
-      color: var(--ui-color-accent, oklch(0.8 0.15 150));
-    }
-
-    /* Table Widget using <ui-table> */
-    .form-table-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-3xs, 0.236em);
-      width: 100%;
-      box-sizing: border-box;
-      margin-block-end: var(--ui-space-xs, 0.618em);
-    }
-
-    .form-table-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--ui-space-xs, 0.618em);
-      margin-bottom: var(--ui-space-4xs, 0.146em);
-    }
-
-    .form-table-title-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .form-table-title {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-    }
-
-    .form-table-desc {
-      font-size: 0.75rem;
-      color: var(--ui-color-text-muted, oklch(0.60 0.02 260));
-    }
-
-    .form-table-wrapper ui-table {
-      width: 100%;
-      min-height: 140px;
-    }
-
-    .table-foot-aggregations {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: var(--ui-space-3xs, 0.236em) var(--ui-space-xs, 0.618em);
-      background: var(--ui-color-surface-elevated, oklch(0.21 0.02 260));
-      border: 1px solid var(--ui-color-border-subtle, oklch(0.32 0.03 260 / 0.7));
-      border-radius: var(--ui-radius-sm, 0.146em);
-    }
-
-    .aggregations-list {
-      display: flex;
-      align-items: center;
-      gap: var(--ui-space-sm, 1em);
-    }
-
-    .aggregation-badge {
-      font-size: 0.8rem;
-      color: var(--ui-color-text, oklch(0.90 0.01 260));
-    }
-
-    .aggregation-badge strong {
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-    }
-
-    .subform-dialog-body {
-      padding: var(--ui-space-xs, 0.618em);
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .subform-instance {
-      width: 100%;
-    }
-
-    /* Tags Widget */
-    .form-tags-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-3xs, 0.236em);
-      width: 100%;
-    }
-
-    .tags-container {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--ui-space-3xs, 0.236em);
-      padding: var(--ui-space-3xs, 0.236em) var(--ui-space-2xs, 0.382em);
-      background: var(--ui-color-surface-elevated, oklch(0.22 0.025 260));
-      border: 1px solid var(--ui-color-border-subtle, oklch(0.35 0.03 260 / 0.7));
-      border-radius: var(--ui-radius-sm, 0.146em);
-      min-height: 36px;
-      box-sizing: border-box;
-    }
-
-    .tag-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      background: color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.20 260)) 25%, var(--ui-color-surface, oklch(0.20 0.02 260)));
-      border: 1px solid color-mix(in oklch, var(--ui-color-primary, oklch(0.65 0.20 260)) 45%, transparent);
-      border-radius: 999px;
-      font-size: 0.75rem;
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-    }
-
-    .tag-del-btn {
-      background: transparent;
-      border: none;
-      color: var(--ui-color-text-muted, oklch(0.70 0.02 260));
-      cursor: pointer;
-      padding: 0;
-      font-size: 0.75rem;
-      line-height: 1;
-    }
-
-    .tag-del-btn:hover {
-      color: var(--ui-color-danger, oklch(0.65 0.22 25));
-    }
-
-    .tag-input {
-      flex: 1 1 120px;
-      border: none;
-      background: transparent;
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-      font-size: 0.85rem;
-      padding: 4px;
-    }
-
-    .tag-input:focus {
-      outline: none;
-    }
-
-    .form-textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 0.5em 0.75em;
-      background: var(--ui-color-surface-elevated, oklch(0.22 0.025 260));
-      border: 1px solid var(--ui-color-border-subtle, oklch(0.35 0.03 260 / 0.7));
-      border-radius: var(--ui-radius-sm, 0.146em);
-      color: var(--ui-color-text, oklch(0.96 0.01 260));
-      font-family: inherit;
-      font-size: 0.875rem;
-      resize: vertical;
-    }
-
-    .form-textarea:focus {
-      outline: none;
-      border-color: var(--ui-color-primary, oklch(0.65 0.20 260));
-    }
-
-    .form-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: var(--ui-space-xs, 0.618em);
-      margin-top: var(--ui-space-xs, 0.618em);
-    }
-  `
+  static override styles: CSSResultGroup = unsafeCSS(STRUCT_FORM_LIGHT_STYLES)
+
+  protected override createRenderRoot(): HTMLElement {
+    return this
+  }
 
   submitLabel = 'Submit'
   bordered = false
@@ -724,12 +771,50 @@ export class UIStructForm extends UIElement {
   #errors: Record<string, string> = {}
   #stepErrors: Record<string, string[]> = {}
 
+  // Consumer-supplied light DOM header / actions children captured before or after initial render
+  #headerNodes: Element[] = []
+  #actionNodes: Element[] = []
+  #slotObserver: MutationObserver | null = null
+
+  #captureLightSlots(): boolean {
+    let changed = false
+    for (const child of Array.from(this.children)) {
+      if (child.tagName === 'FORM' || child.tagName === 'UI-DIALOG') continue
+      const slotName = child.getAttribute('slot')
+      if (slotName === 'header') {
+        child.removeAttribute('slot')
+        child.remove()
+        this.#headerNodes.push(child)
+        changed = true
+      } else if (slotName === 'actions') {
+        child.removeAttribute('slot')
+        child.remove()
+        this.#actionNodes.push(child)
+        changed = true
+      }
+    }
+    this.#slotObserver?.takeRecords()
+    return changed
+  }
+
   override connectedCallback(): void {
+    adoptLightStyles(this, 'ui-struct-form', STRUCT_FORM_LIGHT_STYLES)
+    this.#captureLightSlots()
     super.connectedCallback()
     this.#initDataSources()
+    if (!this.#slotObserver && typeof MutationObserver !== 'undefined') {
+      this.#slotObserver = new MutationObserver(() => {
+        if (this.#captureLightSlots()) {
+          this.requestUpdate()
+        }
+      })
+      this.#slotObserver.observe(this, { childList: true })
+    }
   }
 
   override disconnectedCallback(): void {
+    this.#slotObserver?.disconnect()
+    this.#slotObserver = null
     super.disconnectedCallback()
     for (const controller of this.#abortControllers.values()) {
       controller.abort()
@@ -761,12 +846,13 @@ export class UIStructForm extends UIElement {
     this.requestUpdate('fields', null)
   }
 
-  get values(): Record<string, unknown> {
-    return { ...this.#values }
+  get values(): TValues {
+    return { ...this.#values } as TValues
   }
 
-  set values(v: Record<string, unknown>) {
-    this.#values = typeof v === 'object' && v !== null ? { ...v } : {}
+  set values(v: Partial<TValues>) {
+    this.#values =
+      typeof v === 'object' && v !== null ? { ...(v as Record<string, unknown>) } : {}
     this.#initDataSources()
     this.requestUpdate('values', null)
   }
@@ -809,10 +895,14 @@ export class UIStructForm extends UIElement {
     return null
   }
 
+  public getFieldValue<K extends keyof TValues & string>(key: K): TValues[K]
+  public getFieldValue(key: string): unknown
   public getFieldValue(key: string): unknown {
     return this.#values[key]
   }
 
+  public setFieldValue<K extends keyof TValues & string>(key: K, value: TValues[K]): void
+  public setFieldValue(key: string, value: unknown): void
   public setFieldValue(key: string, value: unknown): void {
     this.#values = {
       ...this.#values,
@@ -823,12 +913,12 @@ export class UIStructForm extends UIElement {
       delete updated[key]
       this.#errors = updated
     }
-    const detail: StructFormChangeEventDetail = {
+    const detail: StructFormChangeEventDetail<TValues> = {
       values: this.values,
       fieldKey: key,
       fieldValue: value,
     }
-    this.emit('ui-form-change', detail)
+    this.emit(UI_EVENTS.FORM_CHANGE, detail)
     this.#handleFieldDependencies(key)
     this.requestUpdate()
   }
@@ -977,7 +1067,7 @@ export class UIStructForm extends UIElement {
       loading: true,
       page,
     })
-    this.emit('ui-form-loading', { loading: true, fieldKey })
+    this.emit(UI_EVENTS.FORM_LOADING, { loading: true, fieldKey })
     this.requestUpdate()
 
     const prevController = this.#abortControllers.get(fieldKey)
@@ -1030,7 +1120,7 @@ export class UIStructForm extends UIElement {
         loading: false,
         page,
       })
-      this.emit('ui-form-loading', { loading: false, fieldKey })
+      this.emit(UI_EVENTS.FORM_LOADING, { loading: false, fieldKey })
       this.requestUpdate()
     } catch (err: any) {
       if (err.name === 'AbortError') {
@@ -1044,7 +1134,7 @@ export class UIStructForm extends UIElement {
         loading: false,
         page: prev?.page || 1,
       })
-      this.emit('ui-form-loading', { loading: false, fieldKey })
+      this.emit(UI_EVENTS.FORM_LOADING, { loading: false, fieldKey })
       this.requestUpdate()
     }
   }
@@ -1379,7 +1469,7 @@ export class UIStructForm extends UIElement {
         ...this.#stepErrors,
         [cKey]: Object.values(stepErrors),
       }
-      this.emit('ui-form-step-error', {
+      this.emit(UI_EVENTS.FORM_STEP_ERROR, {
         stepKey: stepNode.key || stepNode.path,
         errors: stepErrors,
       })
@@ -1396,16 +1486,30 @@ export class UIStructForm extends UIElement {
     return true
   }
 
+  #focusFirstInvalid(): void {
+    const formEl = this.querySelector(':scope > form.struct-form-root')
+    if (!formEl) return
+    const invalid = formEl.querySelector<HTMLElement>(
+      '[aria-invalid="true"], [invalid], .invalid',
+    )
+    if (!invalid) return
+    const focusTarget = invalid.matches('.tags-container')
+      ? invalid.querySelector<HTMLElement>('input')
+      : invalid
+    focusTarget?.focus()
+  }
+
   public submit(): boolean {
     const isValid = this.validate()
     if (!isValid) {
-      this.emit('ui-form-invalid', { errors: this.errors, values: this.values })
+      this.#focusFirstInvalid()
+      this.emit(UI_EVENTS.FORM_INVALID, { errors: this.errors, values: this.values })
       return false
     }
-    const detail: StructFormSubmitEventDetail = {
+    const detail: StructFormSubmitEventDetail<TValues> = {
       values: this.values,
     }
-    this.emit('ui-form-submit', detail)
+    this.emit(UI_EVENTS.FORM_SUBMIT, detail)
     return true
   }
 
@@ -1550,7 +1654,7 @@ export class UIStructForm extends UIElement {
     this.requestUpdate()
   }
 
-  #onSubformSubmit = (event: CustomEvent<{ values: Record<string, unknown> }>) => {
+  #onSubformSubmit = (event: UIStructFormSubmitEvent) => {
     event.stopPropagation()
     if (!this.#subformDialogField) return
     const fieldKey = this.#subformDialogField.key
@@ -1775,8 +1879,8 @@ export class UIStructForm extends UIElement {
           hoverable
           compact
           empty-text="No items added yet. Click '+ Add' to create an entry."
-          @ui-get-page=${(e: CustomEvent) => this.#onFieldGetPage(key, field, e.detail)}
-          @ui-row-click=${(e: CustomEvent<{ row: Record<string, unknown>; index: number }>) =>
+          @ui-page-request=${(e: UITablePageRequestEvent) => this.#onFieldGetPage(key, field, e.detail)}
+          @ui-row-click=${(e: UITableRowClickEvent) =>
             this.#openSubformDialog(field, e.detail.index, e.detail.row)}
         ></ui-table>
 
@@ -1821,7 +1925,7 @@ export class UIStructForm extends UIElement {
 
     return html`
       <div class="form-tags-wrapper">
-        <div class="tags-container">
+        <div class="tags-container ${this.#errors[key] ? 'invalid' : ''}">
           ${tags.map(
             (tag, tagIndex) => html`
               <span class="tag-chip">
@@ -1934,10 +2038,14 @@ export class UIStructForm extends UIElement {
       .page=${cached?.page || 1}
       ?disabled=${Boolean(props.disabled)}
       ?required=${Boolean(field.required)}
+      ?invalid=${Boolean(this.#errors[key])}
       ?multiple=${Boolean(props.multiple)}
       ?creatable=${Boolean(props.creatable || (field as any).descriptor?.metadata?.creatable)}
-      @ui-change=${(e: CustomEvent) => this.setFieldValue(key, e.detail.value)}
-      @ui-get-page=${(e: CustomEvent) => this.#onFieldGetPage(key, field, e.detail)}
+      @ui-change=${(e: UIComboboxChangeEvent) => {
+        e.stopPropagation()
+        this.setFieldValue(key, e.detail.value)
+      }}
+      @ui-page-request=${(e: UIComboboxPageRequestEvent) => this.#onFieldGetPage(key, field, e.detail)}
     ></ui-combobox>`
   }
 
@@ -1982,18 +2090,20 @@ export class UIStructForm extends UIElement {
       ?remote=${isRemote}
       ?loading=${isLoading}
       .total=${cached?.total}
-      @ui-get-page=${(e: CustomEvent) => this.#onFieldGetPage(key, field, e.detail)}
+      @ui-page-request=${(e: UIListPageRequestEvent) => this.#onFieldGetPage(key, field, e.detail)}
     ></ui-list>`
   }
 
   #renderTextareaWidget(field: StructFormField, valStr: string, props: Record<string, unknown>) {
+    const isInvalid = Boolean(this.#errors[field.key])
     return html`<textarea
-      class="form-textarea"
+      class="form-textarea ${isInvalid ? 'invalid' : ''}"
       data-key=${field.key}
       rows=${(props.rows as number) || 3}
       placeholder=${field.placeholder || ''}
       ?disabled=${Boolean(props.disabled)}
       ?required=${Boolean(field.required)}
+      aria-invalid=${isInvalid ? 'true' : nothing}
       .value=${valStr}
       @input=${(e: Event) => this.setFieldValue(field.key, (e.target as HTMLTextAreaElement).value)}
     ></textarea>`
@@ -2118,8 +2228,11 @@ export class UIStructForm extends UIElement {
         return html`
           <div class="form-steps-container" part="steps">
             <ui-stepper
-              .activeStep=${stepIndex}
-              @ui-change=${(e: CustomEvent) => this.#setStep(containerKey, e.detail.activeStep)}
+              .activeStep=${live(stepIndex)}
+              @ui-change=${(e: UIStepperChangeEvent) => {
+                e.stopPropagation()
+                this.#setStep(containerKey, e.detail.activeStep)
+              }}
             >
               ${stepsList.map((stepNode: any, idx: number) => {
                 const stepTitle =
@@ -2132,7 +2245,6 @@ export class UIStructForm extends UIElement {
                     .description=${stepDesc}
                     ?active=${idx === stepIndex}
                     ?completed=${idx < stepIndex}
-                    @click=${() => this.#setStep(containerKey, idx)}
                   ></ui-step>
                 `
               })}
@@ -2170,7 +2282,6 @@ export class UIStructForm extends UIElement {
                       variant="primary"
                       size="md"
                       class="btn-submit"
-                      @click=${this.#onSubmit}
                     >
                       ${this.submitLabel || 'Submit'}
                     </ui-button>
@@ -2197,8 +2308,11 @@ export class UIStructForm extends UIElement {
         return html`
           <div class="form-tabs-container">
             <ui-tabs
-              .value=${activeChild?.key || ''}
-              @ui-change=${(e: CustomEvent) => this.#setTab(containerKey, e.detail.value)}
+              .value=${live(activeChild?.key || '')}
+              @ui-change=${(e: UITabsChangeEvent) => {
+                e.stopPropagation()
+                this.#setTab(containerKey, e.detail.value)
+              }}
             >
               ${children.map((tabNode: any) => {
                 const title = tabNode.options?.title || tabNode.label || tabNode.key
@@ -2207,7 +2321,6 @@ export class UIStructForm extends UIElement {
                   <ui-tab
                     .value=${tabNode.key}
                     ?active=${isActive}
-                    @click=${() => this.#setTab(containerKey, tabNode.key)}
                   >
                     ${title}
                   </ui-tab>
@@ -2312,37 +2425,37 @@ export class UIStructForm extends UIElement {
     return html`
       <form
         class="struct-form-root ${this.bordered ? 'bordered' : ''} ${this.dense ? 'dense' : ''} ${this.isFetching ? 'fetching' : ''}"
-        part="form"
         aria-label=${this.ariaLabel || nothing}
-        ?aria-busy=${this.isFetching}
+        aria-busy=${this.isFetching ? 'true' : nothing}
         @submit=${this.#onSubmit}
         @ui-input=${this.#onWidgetEvent}
         @ui-change=${this.#onWidgetEvent}
       >
         ${this.isFetching
-          ? html`<div class="form-loader-bar" part="loader-bar" role="progressbar" aria-label="Loading form data">
+          ? html`<div class="form-loader-bar" role="progressbar" aria-label="Loading form data">
               <div class="form-loader-bar-indicator"></div>
             </div>`
           : nothing}
-        <slot name="header"></slot>
-        <div class="form-fields-container layout-${layout}" part="fields">
+        ${this.#headerNodes.length > 0 ? this.#headerNodes : nothing}
+        <div class="form-fields-container layout-${layout}">
           ${tree
             ? tree.nodes.map((node: any) => this.#renderNode(node))
             : this.#fields.map((field) => this.#renderField(field))}
         </div>
-        ${!hasSteps && this.submitLabel
+        ${!hasSteps && (this.submitLabel || this.#actionNodes.length > 0)
           ? html`
-              <div class="form-actions" part="actions">
-                <slot name="actions">
-                  <ui-button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    class="btn-submit"
-                    @click=${this.#onSubmit}
-                    >${this.submitLabel}</ui-button
-                  >
-                </slot>
+              <div class="form-actions">
+                ${this.#actionNodes.length > 0
+                  ? this.#actionNodes
+                  : html`
+                      <ui-button
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        class="btn-submit"
+                        >${this.submitLabel}</ui-button
+                      >
+                    `}
               </div>
             `
           : nothing}
@@ -2355,7 +2468,11 @@ export class UIStructForm extends UIElement {
         title=${this.#subformDialogRowIndex >= 0
           ? `Edit ${this.#subformDialogField?.label || 'Item'}`
           : `Add ${this.#subformDialogField?.label || 'Item'}`}
-        @ui-close=${() => this.#closeSubformDialog()}
+        @ui-open=${(e: Event) => e.stopPropagation()}
+        @ui-close=${(e: Event) => {
+          e.stopPropagation()
+          this.#closeSubformDialog()
+        }}
       >
         <div class="subform-dialog-body">
           ${this.#subformDialogOpen && this.#subformDialogField
@@ -2367,6 +2484,9 @@ export class UIStructForm extends UIElement {
                   submit-label=${this.#subformDialogRowIndex >= 0 ? 'Update Item' : 'Add Item'}
                   @ui-form-submit=${this.#onSubformSubmit}
                   @ui-form-change=${(e: Event) => e.stopPropagation()}
+                  @ui-form-invalid=${(e: Event) => e.stopPropagation()}
+                  @ui-form-loading=${(e: Event) => e.stopPropagation()}
+                  @ui-form-step-error=${(e: Event) => e.stopPropagation()}
                 ></ui-struct-form>
               `
             : nothing}

@@ -1,6 +1,7 @@
 import { css, html, nothing, type PropertyValues, type CSSResultGroup, type PropertyDeclarations } from 'lit';
 import { bool, UIElement } from "../base.element.ts";
 import { UI_TAG_NAMES } from "../constants.ts";
+import { UI_EVENTS, type UIPopoverEventMap } from "../events.ts";
 
 export type PopoverType = "auto" | "manual";
 export type PopoverPlacement =
@@ -20,7 +21,7 @@ export type PopoverPlacement =
 
 type PopoverAnchor = HTMLElement | { x: number; y: number };
 
-export class UIPopover extends UIElement {
+export class UIPopover extends UIElement<UIPopoverEventMap> {
     static override properties: PropertyDeclarations = {
         open: bool(),
         type: { type: String, reflect: true },
@@ -205,7 +206,7 @@ export class UIPopover extends UIElement {
                 if (this.#positionOnOpen) this.#applyAnchor();
                 this.#positionOnOpen = false;
                 this.#showNative();
-                this.emit("ui-popover-open", { placement: this.placement });
+                this.emit(UI_EVENTS.OPEN, { placement: this.placement });
                 return;
             }
             this.open = true;
@@ -324,10 +325,10 @@ export class UIPopover extends UIElement {
                 if (this.#positionOnOpen) this.#applyAnchor();
                 this.#positionOnOpen = false;
                 this.#showNative();
-                this.emit("ui-popover-open", { placement: this.placement });
+                this.emit(UI_EVENTS.OPEN, { placement: this.placement });
             } else if (closed) {
                 this.#hideNative();
-                this.emit("ui-popover-close");
+                this.emit(UI_EVENTS.CLOSE, {});
             }
         }
 
