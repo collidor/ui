@@ -587,52 +587,6 @@ slider.addEventListener(UI_EVENTS.CHANGE, (e) => {
 })`,
   },
 
-  'struct-form': {
-    label: 'Edit fields and submit (try submitting with Name empty to trigger ui-form-invalid)',
-    html: `
-      <div style="max-width: 420px; width: 100%">
-        <ui-struct-form id="api-struct-form" submit-label="Submit Form" bordered></ui-struct-form>
-      </div>
-    `,
-    targetSelector: '#api-struct-form',
-    events: [
-      UI_EVENTS.FORM_CHANGE,
-      UI_EVENTS.FORM_SUBMIT,
-      UI_EVENTS.FORM_INVALID,
-      UI_EVENTS.FORM_LOADING,
-      UI_EVENTS.FORM_STEP_ERROR,
-    ],
-    setup(preview) {
-      const form = preview.querySelector('#api-struct-form')
-      form.fields = [
-        { key: 'name', label: 'Service Name', widget: 'text', required: true, placeholder: 'Required field…' },
-        { key: 'replicas', label: 'Replicas', widget: 'number', defaultValue: 2, widgetProps: { min: 1, max: 10 } },
-        { key: 'canary', label: 'Canary Rollout', widget: 'switch', defaultValue: false },
-      ]
-    },
-    code: `import { UI_EVENTS, type UIStructForm } from '@collidor/ui'
-
-interface ServiceConfig {
-  name: string
-  replicas: number
-  canary: boolean
-}
-
-const form = document.querySelector('ui-struct-form') as UIStructForm<ServiceConfig>
-
-form.addEventListener(UI_EVENTS.FORM_CHANGE, (e) => {
-  console.log(e.detail.fieldKey, e.detail.fieldValue, e.detail.values.name)
-})
-
-form.addEventListener(UI_EVENTS.FORM_SUBMIT, (e) => {
-  console.log('Valid submit:', e.detail.values) // ServiceConfig
-})
-
-form.addEventListener(UI_EVENTS.FORM_INVALID, (e) => {
-  console.log('Errors:', e.detail.errors, e.detail.values)
-})`,
-  },
-
   toast: {
     label: 'Spawn a toast and dismiss it (or wait 2.5s) to observe ui-dismiss on the container',
     html: `

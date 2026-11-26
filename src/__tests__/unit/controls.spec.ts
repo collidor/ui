@@ -6,7 +6,6 @@ import {
     UIInput,
     UINumberInput,
     UISelect,
-    UIStructForm,
 } from "../../index.ts";
 import type {
     UIAccordionItem,
@@ -211,8 +210,6 @@ describe("control contract", () => {
             { ctor: UINumberInput, selector: ".number-wrapper.invalid:focus-within:not(.disabled)" },
             { ctor: UISelect, selector: ".select-wrapper.invalid:focus-within:not(.disabled)" },
             { ctor: UICombobox, selector: ".combobox-container.invalid:focus-within:not(.disabled)" },
-            { ctor: UIStructForm, selector: ".form-textarea.invalid:focus" },
-            { ctor: UIStructForm, selector: ".tags-container.invalid:focus-within" },
         ];
 
         for (const { ctor, selector } of components) {

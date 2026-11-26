@@ -27,7 +27,6 @@ import './components/dialog.component.ts'
 import './components/table.component.ts'
 import './components/pagination.component.ts'
 import './components/list.component.ts'
-import './components/struct-form.component.ts'
 import './components/progress.component.ts'
 import './components/drawer.component.ts'
 import './components/segmented-control.component.ts'
@@ -41,7 +40,7 @@ import './components/context-menu.component.ts'
 import './components/stepper.component.ts'
 
 // Export Base Classes & Types
-export { UIElement } from './base.element.ts'
+export { UIElement, adoptLightStyles, bool } from './base.element.ts'
 export {
   UIHeaderedElement,
   HEADER_SURFACES,
@@ -74,11 +73,6 @@ export { UIDialog } from './components/dialog.component.ts'
 export { UITable } from './components/table.component.ts'
 export { UIPagination, type PaginationMode, type StepperFormat } from './components/pagination.component.ts'
 export { UIList, type ItemRenderer } from './components/list.component.ts'
-export {
-  UIStructForm,
-  type StructFormField,
-  type StructFormWidgetType,
-} from './components/struct-form.component.ts'
 export { UIProgress } from './components/progress.component.ts'
 export { UIDrawer, type DrawerPlacement } from './components/drawer.component.ts'
 export { UISegmentedControl, UISegmentItem } from './components/segmented-control.component.ts'

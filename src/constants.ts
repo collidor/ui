@@ -30,7 +30,6 @@ export const UI_TAG_NAMES = {
   TABLE: 'ui-table',
   PAGINATION: 'ui-pagination',
   LIST: 'ui-list',
-  STRUCT_FORM: 'ui-struct-form',
   PROGRESS: 'ui-progress',
   DRAWER: 'ui-drawer',
   SEGMENTED_CONTROL: 'ui-segmented-control',

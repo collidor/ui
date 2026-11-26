@@ -16,7 +16,6 @@ import type {
   UITable,
   UIPagination,
   UIList,
-  UIStructForm,
   UIProgress,
   UIDrawer,
   UISegmentedControl,
@@ -57,7 +56,6 @@ declare global {
     'ui-table': UITable<any>
     'ui-pagination': UIPagination
     'ui-list': UIList<any>
-    'ui-struct-form': UIStructForm<any>
     'ui-progress': UIProgress
     'ui-drawer': UIDrawer
     'ui-segmented-control': UISegmentedControl

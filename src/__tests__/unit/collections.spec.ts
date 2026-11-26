@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import "../../index.ts";
 import { UI_TAG_NAMES } from "../../constants.ts";
-import type { UIDialog, UIStructForm, UITable } from "../../index.ts";
+import type { UIDialog, UITable } from "../../index.ts";
 import { mount, record } from "../harness.ts";
 
 const heroes: Array<Record<string, unknown>> = [
@@ -73,42 +73,6 @@ describe("collection contract", () => {
             "o",
         ], ["a"]]);
         expect(legacy).toHaveLength(0);
-    });
-
-    it("submits the struct form values a caller set", () => {
-        const form = mount(
-            document.createElement(UI_TAG_NAMES.STRUCT_FORM) as UIStructForm,
-        );
-        form.fields = [{ key: "name", label: "Name", widget: "text" }];
-        const changes = record<
-            {
-                fieldKey: string;
-                fieldValue: unknown;
-                values: Record<string, unknown>;
-            }
-        >(
-            form,
-            "ui-form-change",
-        );
-        const submits = record<{ values: Record<string, unknown> }>(
-            form,
-            "ui-form-submit",
-        );
-        const legacyChange = record(form, "form-change");
-        const legacySubmit = record(form, "form-submit");
-
-        form.setFieldValue("name", "Ada");
-        form.submit();
-
-        expect(form.getFieldValue("name")).toBe("Ada");
-        expect(changes.map((event) => event.detail)).toEqual([
-            { fieldKey: "name", fieldValue: "Ada", values: { name: "Ada" } },
-        ]);
-        expect(submits.map((event) => event.detail)).toEqual([{
-            values: { name: "Ada" },
-        }]);
-        expect(legacyChange).toHaveLength(0);
-        expect(legacySubmit).toHaveLength(0);
     });
 
     it("opens and closes a dialog once each", () => {

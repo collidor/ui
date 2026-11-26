@@ -7,7 +7,6 @@ import {
   type UIList,
   type UIPagination,
   type UICombobox,
-  type UIStructForm,
   type UIMenu,
   type UIDrawer,
   type UIDialog,
@@ -21,7 +20,6 @@ import {
   type UIListPageRequestEvent,
   type UIComboboxChangeEvent,
   type UIComboboxPageRequestEvent,
-  type UIStructFormSubmitEvent,
   type UIDrawerOpenEvent,
   type UIDialogOpenEvent,
 } from '../../index.ts'
@@ -406,7 +404,7 @@ describe('standardized v2 event system & typed listeners', () => {
     expect(leaked).toEqual([])
   })
 
-  it('infers generic option and form value types for UICombobox<O> and UIStructForm<TValues>', async () => {
+  it('infers generic option types for UICombobox<O>', async () => {
     interface CloudRegion {
       value: 'us-east' | 'eu-west'
       label: string
@@ -434,34 +432,5 @@ describe('standardized v2 event system & typed listeners', () => {
 
     expect(changeEvents).toHaveLength(1)
     expect(changeEvents[0].detail.selectedOptions[0].latencyMs).toBe(62)
-
-    interface ProfileForm {
-      username: string
-      age: number
-    }
-
-    const form = mount(document.createElement('ui-struct-form') as UIStructForm<ProfileForm>)
-    form.fields = [
-      { key: 'username', label: 'Username', widget: 'text' },
-      { key: 'age', label: 'Age', widget: 'number' },
-    ]
-    form.values = { username: 'ada', age: 36 }
-
-    const submits: UIStructFormSubmitEvent<ProfileForm>[] = []
-    form.addEventListener(UI_EVENTS.FORM_CHANGE, (event) => {
-      const username: string = event.detail.values.username
-      expect(typeof username).toBe('string')
-    })
-    form.addEventListener(UI_EVENTS.FORM_SUBMIT, (event) => {
-      const age: number = event.detail.values.age
-      expect(typeof age).toBe('number')
-      submits.push(event)
-    })
-
-    form.setFieldValue('username', 'grace')
-    form.submit()
-
-    expect(submits).toHaveLength(1)
-    expect(submits[0].detail.values).toEqual({ username: 'grace', age: 36 })
   })
 })

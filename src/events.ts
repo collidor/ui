@@ -28,11 +28,6 @@ export const UI_EVENTS = {
   ROW_CLICK: 'ui-row-click',
   ITEM_CLICK: 'ui-item-click',
   COLUMNS_CHANGE: 'ui-columns-change',
-  FORM_CHANGE: 'ui-form-change',
-  FORM_SUBMIT: 'ui-form-submit',
-  FORM_INVALID: 'ui-form-invalid',
-  FORM_LOADING: 'ui-form-loading',
-  FORM_STEP_ERROR: 'ui-form-step-error',
 } as const
 
 export type UIEventName = (typeof UI_EVENTS)[keyof typeof UI_EVENTS]
@@ -429,54 +424,6 @@ export interface UIContextMenuEventMap {
 }
 
 // ---------------------------------------------------------------------------
-// Struct Form
-// ---------------------------------------------------------------------------
-
-export interface StructFormChangeEventDetail<
-  TValues = Record<string, unknown>,
-> {
-  values: TValues
-  fieldKey: (keyof TValues & string) | (string & {})
-  fieldValue: unknown
-}
-export interface StructFormSubmitEventDetail<
-  TValues = Record<string, unknown>,
-> {
-  values: TValues
-}
-export interface StructFormInvalidEventDetail<
-  TValues = Record<string, unknown>,
-> {
-  errors: Record<string, string>
-  values: TValues
-}
-export interface StructFormLoadingEventDetail {
-  loading: boolean
-  fieldKey: string
-}
-export interface StructFormStepErrorEventDetail {
-  stepKey: string
-  errors: Record<string, string>
-}
-
-export type UIStructFormChangeEvent<TValues = Record<string, unknown>> =
-  CustomEvent<StructFormChangeEventDetail<TValues>>
-export type UIStructFormSubmitEvent<TValues = Record<string, unknown>> =
-  CustomEvent<StructFormSubmitEventDetail<TValues>>
-export type UIStructFormInvalidEvent<TValues = Record<string, unknown>> =
-  CustomEvent<StructFormInvalidEventDetail<TValues>>
-export type UIStructFormLoadingEvent = CustomEvent<StructFormLoadingEventDetail>
-export type UIStructFormStepErrorEvent = CustomEvent<StructFormStepErrorEventDetail>
-
-export interface UIStructFormEventMap<TValues = Record<string, unknown>> {
-  'ui-form-change': UIStructFormChangeEvent<TValues>
-  'ui-form-submit': UIStructFormSubmitEvent<TValues>
-  'ui-form-invalid': UIStructFormInvalidEvent<TValues>
-  'ui-form-loading': UIStructFormLoadingEvent
-  'ui-form-step-error': UIStructFormStepErrorEvent
-}
-
-// ---------------------------------------------------------------------------
 // Global Aggregated Event Map (used for HTMLElementEventMap augmentation)
 // ---------------------------------------------------------------------------
 
@@ -520,11 +467,6 @@ export interface UIGlobalEventMap {
   'ui-row-click': UITableRowClickEvent
   'ui-item-click': UIListItemClickEvent
   'ui-columns-change': UITableColumnsChangeEvent
-  'ui-form-change': UIStructFormChangeEvent
-  'ui-form-submit': UIStructFormSubmitEvent
-  'ui-form-invalid': UIStructFormInvalidEvent
-  'ui-form-loading': UIStructFormLoadingEvent
-  'ui-form-step-error': UIStructFormStepErrorEvent
 }
 
 // Re-export sort direction type convenience

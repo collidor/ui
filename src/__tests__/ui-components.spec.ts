@@ -26,7 +26,6 @@ import {
     UISegmentItem,
     UISelect,
     UISlider,
-    UIStructForm,
     UISwitch,
     UITab,
     UITable,
@@ -75,9 +74,6 @@ describe("UI Web Components Library", () => {
             expect(customElements.get(UI_TAG_NAMES.DIALOG)).toBe(UIDialog);
             expect(customElements.get(UI_TAG_NAMES.TABLE)).toBe(UITable);
             expect(customElements.get(UI_TAG_NAMES.LIST)).toBe(UIList);
-            expect(customElements.get(UI_TAG_NAMES.STRUCT_FORM)).toBe(
-                UIStructForm,
-            );
         });
     });
 
@@ -1105,53 +1101,6 @@ describe("UI Web Components Library", () => {
             expect(paged.items.length).toBe(2);
             expect(paged.startItem).toBe(1);
             expect(paged.endItem).toBe(2);
-        });
-    });
-
-    describe("UIStructForm (<ui-struct-form>)", () => {
-        it("should dynamically generate form widgets and emit change/submit events", () => {
-            const form = document.createElement(
-                UI_TAG_NAMES.STRUCT_FORM,
-            ) as UIStructForm;
-            form.fields = [
-                {
-                    key: "username",
-                    label: "Username",
-                    widget: "text",
-                    defaultValue: "aldon",
-                },
-                {
-                    key: "level",
-                    label: "Level",
-                    widget: "number",
-                    defaultValue: 5,
-                },
-                {
-                    key: "active",
-                    label: "Active",
-                    widget: "switch",
-                    defaultValue: true,
-                },
-            ];
-            document.body.appendChild(form);
-
-            expect(form.getFieldValue("username")).toBe("aldon");
-            expect(form.getFieldValue("level")).toBe(5);
-
-            const changeSpy = vi.fn<(e: Event) => void>();
-            const submitSpy = vi.fn<(e: Event) => void>();
-
-            form.addEventListener("ui-form-change", changeSpy);
-            form.addEventListener("ui-form-submit", submitSpy);
-
-            form.setFieldValue("username", "aldon_hero");
-            expect(form.getFieldValue("username")).toBe("aldon_hero");
-            expect(changeSpy).toHaveBeenCalled();
-
-            form.submit();
-            expect(submitSpy).toHaveBeenCalled();
-
-            document.body.removeChild(form);
         });
     });
 

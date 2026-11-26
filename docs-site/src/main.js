@@ -1376,7 +1376,6 @@ const SECTIONS = [
   type UITable,
   type UIList,
   type UICombobox,
-  type UIStructForm,
 } from '@collidor/ui'
 
 interface User {
@@ -1416,7 +1415,6 @@ table.addEventListener(UI_EVENTS.PAGE_REQUEST, async (e) => {
           ['ui-selection-change', 'UI_EVENTS.SELECTION_CHANGE', '{ selectedKeys, selectedRows | selectedItems, ... }', 'Row/item selection change on ui-table and ui-list'],
           ['ui-row-click / ui-item-click', 'UI_EVENTS.ROW_CLICK / ITEM_CLICK', '{ row | item, index, key, selected }', 'Row or item activation on ui-table and ui-list'],
           ['ui-columns-change', 'UI_EVENTS.COLUMNS_CHANGE', '{ columns }', 'Column visibility or order update on ui-table'],
-          ['ui-form-*', 'UI_EVENTS.FORM_*', 'change / submit / invalid / loading / step-error', 'Structured form lifecycle events on ui-struct-form'],
         ]),
       ]
     },
@@ -1993,72 +1991,6 @@ combo.addEventListener('ui-page-request', async (e) => {
           ['helper', 'string', "''", 'Descriptive helper text beneath input'],
           ['error', 'string', "''", 'Validation error message (replaces helper text in red)'],
           ['orientation', "'vertical'|'horizontal'", "'vertical'", 'Layout orientation of label and control'],
-        ]),
-      ]
-    },
-  },
-
-  // ── Struct Form ───────────────────────────────────────────────────────────
-  {
-    id: 'struct-form',
-    title: 'Struct Form',
-    tag: 'ui-struct-form',
-    group: 'Forms',
-    description:
-      'Dynamic schema-driven form generator rendered in Light DOM for direct visibility, styling, and accessibility, automatically composing Collidor UI controls from field definitions.',
-    build() {
-      return [
-        subTitle('Dynamic Form Generation'),
-        demoBlock({
-          label: 'Configured with text, number, select, and switch fields',
-          html: `
-            <div style="max-width: 440px;">
-              <ui-struct-form id="demo-struct-form" submit-label="Save Settings"></ui-struct-form>
-              <pre id="struct-form-output" style="margin-top: 12px; padding: 10px; border-radius: 6px; background: var(--docs-code-bg); font-size: 0.75rem; color: var(--docs-accent); min-height: 24px; border: 1px solid var(--docs-border);">Form submitted data will appear here…</pre>
-            </div>
-          `,
-          setup(preview) {
-            const form = preview.querySelector('#demo-struct-form')
-            const output = preview.querySelector('#struct-form-output')
-            form.fields = [
-              { key: 'clusterName', label: 'Cluster Name', widget: 'text', defaultValue: 'Primary-US-East', required: true },
-              { key: 'replicas', label: 'Replica Count', widget: 'number', defaultValue: 3, widgetProps: { min: 1, max: 10 } },
-              { key: 'region', label: 'Deployment Region', widget: 'select', defaultValue: 'us-east-1', options: [
-                { value: 'us-east-1', label: 'US East (N. Virginia)' },
-                { value: 'eu-west-1', label: 'EU West (Ireland)' },
-                { value: 'ap-east-1', label: 'AP East (Hong Kong)' },
-              ]},
-              { key: 'autoScale', label: 'Enable Auto-Scaling', widget: 'switch', defaultValue: true },
-            ]
-            form.addEventListener('ui-form-submit', (e) => {
-              output.textContent = JSON.stringify(e.detail.values, null, 2)
-            })
-          },
-        }),
-        codeBlock(`const form = document.querySelector('ui-struct-form')
-form.fields = [
-  { key: 'clusterName', label: 'Cluster Name', widget: 'text', defaultValue: 'Cluster-1' },
-  { key: 'replicas', label: 'Replicas', widget: 'number', defaultValue: 3 },
-  { key: 'autoScale', label: 'Auto-Scaling', widget: 'switch', defaultValue: true },
-]
-form.addEventListener('ui-form-submit', (e) => console.log(e.detail.values))`, 'js'),
-
-        subTitle('Properties'),
-        propsTable([
-          ['fields', 'StructFormField[]', '[]', 'Array of field descriptors defining keys, labels, widgets'],
-          ['values', 'TValues', '{}', 'Initial or controlled form values (generic via UIStructForm<TValues>)'],
-          ['submit-label', 'string', "'Submit'", 'Text on the submit button'],
-          ['bordered', 'boolean', 'false', 'Adds an outer container border'],
-          ['dense', 'boolean', 'false', 'Compact spacing between form rows'],
-        ]),
-
-        subTitle('Events'),
-        eventsTable([
-          ['ui-form-change', 'UIStructFormChangeEvent<TValues>', '{ values, fieldKey, fieldValue }', 'Fired whenever any field value changes'],
-          ['ui-form-submit', 'UIStructFormSubmitEvent<TValues>', '{ values }', 'Fired when validation passes and the form is submitted'],
-          ['ui-form-invalid', 'UIStructFormInvalidEvent<TValues>', '{ errors, values }', 'Fired when submission fails validation'],
-          ['ui-form-loading', 'UIStructFormLoadingEvent', '{ loading, fieldKey }', 'Fired when an async field dataSource starts or finishes loading'],
-          ['ui-form-step-error', 'UIStructFormStepErrorEvent', '{ stepKey, errors }', 'Fired when advancing a wizard step fails validation'],
         ]),
       ]
     },
