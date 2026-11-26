@@ -35,7 +35,6 @@ jobs:
               with:
                   node-version: 24
                   cache: 'pnpm'
-                  registry-url: 'https://registry.npmjs.org'
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
@@ -52,19 +51,18 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NPM_TOKEN: "00000000-0000-0000-0000-000000000000"
 
+            # Trusted publishing (OIDC): no token. The `id-token: write` permission above lets npm
+            # prove which workflow is publishing, and the package's Trusted Publisher setting on
+            # npmjs.com (repository collidor/ui, workflow publish.yml) accepts it. Do not add
+            # `registry-url` to setup-node or a NODE_AUTH_TOKEN: an empty token makes npm stop with
+            # ENEEDAUTH instead of using OIDC. No continue-on-error: a failed publish must fail the run.
             - name: Publish to NPM
-              continue-on-error: true
               run: |
                   if [ -f .release_flag ]; then
-                    npm_out=$(npm publish --access public 2>&1) || {
-                      echo "::error title=NPM_PUBLISH_ERROR::$(echo "$npm_out" | tr '\n' ' ')"
-                      exit 1
-                    }
+                    npm publish --provenance --access public
                   else
                     echo "No release flag found, skipping publish."
                   fi
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
             - name: Publish to JSR
               continue-on-error: true
