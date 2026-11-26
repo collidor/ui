@@ -66,18 +66,22 @@ jobs:
             # npmjs.com (repository collidor/ui, workflow publish.yml) accepts it. Do not add
             # `registry-url` to setup-node or a NODE_AUTH_TOKEN: an empty token makes npm stop with
             # ENEEDAUTH instead of using OIDC. No continue-on-error: a failed publish must fail the run.
-            - name: Publish to NPM
+            - name: Update npm
+              # staged publishing needs npm >= 11.15; the npm bundled with Node 24 is older
+              run: npm install -g npm@latest
+
+            - name: Stage on npm (approve on npmjs.com)
               run: |
                   VERSION=$(node -p "require('./package.json').version")
                   if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
                     # publish the checked-out tag, unless that version is already on npm
                     if npm view "@collidor/ui@$VERSION" version >/dev/null 2>&1; then
-                      echo "@collidor/ui@$VERSION is already on npm, nothing to do."
+                      echo "@collidor/ui@$VERSION is already on npm, nothing to stage."
                     else
-                      npm publish --provenance --access public
+                      npm stage publish --provenance --access public
                     fi
                   elif [ -f .release_flag ]; then
-                    npm publish --provenance --access public
+                    npm stage publish --provenance --access public
                   else
                     echo "No release flag found, skipping publish."
                   fi
