@@ -1,3 +1,17 @@
+# [3.0.0](https://github.com/collidor/ui/compare/v2.0.0...v3.0.0) (2026-11-26)
+
+
+* feat!: move <ui-struct-form> to @collidor/ui-forms ([b784916](https://github.com/collidor/ui/commit/b784916d0038ded05a1f62b37ab04f0d2046c14c))
+
+
+### BREAKING CHANGES
+
+* `<ui-struct-form>` is no longer registered by `@collidor/ui`. Install
+`@collidor/ui-forms` and import it (`import '@collidor/ui-forms'`); the element, its properties and
+its `ui-form-*` events are unchanged apart from the renderer now being driven by a struct controller.
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+
 # [2.0.0](https://github.com/collidor/ui/compare/v1.1.0...v2.0.0) (2026-11-23)
 
 
