@@ -4,6 +4,14 @@ on:
     push:
         branches:
             - main
+    # Publish a release that exists but never reached npm (a failed publish cannot be retried by re-running
+    # the job: the release flag only exists in the run that created the release). Run it from `main` and
+    # give it the tag, e.g. v3.0.0. It lives in this file because npm's Trusted Publisher names the workflow.
+    workflow_dispatch:
+        inputs:
+            ref:
+                description: Tag to publish, e.g. v3.0.0
+                required: true
 
 permissions:
     contents: write
@@ -19,6 +27,7 @@ jobs:
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+                  ref: ${{ inputs.ref || github.ref }}
 
             - name: Setup Deno
               uses: denoland/setup-deno@v2
@@ -46,6 +55,7 @@ jobs:
               run: pnpm run build
 
             - name: Semantic Release
+              if: github.event_name == 'push'
               run: npx semantic-release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +68,15 @@ jobs:
             # ENEEDAUTH instead of using OIDC. No continue-on-error: a failed publish must fail the run.
             - name: Publish to NPM
               run: |
-                  if [ -f .release_flag ]; then
+                  VERSION=$(node -p "require('./package.json').version")
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                    # publish the checked-out tag, unless that version is already on npm
+                    if npm view "@collidor/ui@$VERSION" version >/dev/null 2>&1; then
+                      echo "@collidor/ui@$VERSION is already on npm, nothing to do."
+                    else
+                      npm publish --provenance --access public
+                    fi
+                  elif [ -f .release_flag ]; then
                     npm publish --provenance --access public
                   else
                     echo "No release flag found, skipping publish."
